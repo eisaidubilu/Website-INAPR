@@ -1,0 +1,357 @@
+{
+ "source": "inapr.org/webinar.html",
+ "items": [
+  {
+   "date": "2022-09-02",
+   "time": "16.00–17.00",
+   "speaker": "Dr. Eng. Arie Wahyu Wijayanto, S.S.T, M.T.",
+   "institution": "Politeknik Statistika STIS",
+   "title": "Satellite Imagery Analytics and Geospatial Big Data for Official Statistics",
+   "youtube": "https://www.youtube.com/watch?v=u0CJo4lSPsA",
+   "slides": [
+    "webinar-34.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-08-26",
+   "time": "16.00–17.00",
+   "speaker": "Prof.Dr.Eng. Kuwat Triyana, M.Si.",
+   "institution": "Fak. MIPA Universitas Gadjah Mada",
+   "title": "Metode Hybrid learning untuk analisis nafas pasien Covid-19",
+   "youtube": "https://www.youtube.com/watch?v=Vdre4Hq-Jys",
+   "slides": [
+    "webinar-33.pdf"
+   ],
+   "papers": [
+    "https://www.nature.com/articles/s41746-022-00661-2",
+    "https://www.sciencedirect.com/science/article/pii/S0933365722000884?via%3Dihub"
+   ]
+  },
+  {
+   "date": "2022-08-19",
+   "time": "16.00–17.00",
+   "speaker": "Setia Pramana, PhD",
+   "institution": "Politeknik Statistika STIS",
+   "title": "Big Data Implementation for Price Statistics, Opportunities and Challenges",
+   "youtube": "https://www.youtube.com/watch?v=Z0Q3TcXka8Y",
+   "slides": [
+    "webinar-32.pdf"
+   ],
+   "papers": [
+    "https://content.iospress.com/articles/statistical-journal-of-the-iaos/sji200740"
+   ]
+  },
+  {
+   "date": "2022-08-05",
+   "time": "16.00–17.00",
+   "speaker": "Dr. Wisnu Ananta Kusuma",
+   "institution": "Institut Pertanian Bogor",
+   "title": "A network analysis to identify lung cancer comorbid diseases",
+   "youtube": "https://www.youtube.com/watch?v=wqHxkq2Ns3I",
+   "slides": [
+    "webinar-30.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-07-29",
+   "time": "16.00–17.00",
+   "speaker": "Oskar Riandy, B.Eng., M.Sc.",
+   "institution": "PT. Bahasa Kita",
+   "title": "Penerapan Teknologi Suara dan Bahasa pada Bidang Medis",
+   "youtube": "https://www.youtube.com/watch?v=MDq08bDF5bs",
+   "slides": [
+    "webinar-29.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-07-08",
+   "time": "16.00–17.30",
+   "speaker": "Dr. Lina Choridah, Dr. Hanung A. Nugroho",
+   "institution": "Universitas Gadjah Mada",
+   "title": "Peranan AI pada X-Ray Toraks Untuk penegakan diagnosis dan prognosis Covid-19",
+   "youtube": "https://www.youtube.com/watch?v=LTvS9gcJK04",
+   "slides": [
+    "webinar-28a.pdf",
+    "webinar-28b.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-07-01",
+   "time": "16.00–17.00",
+   "speaker": "Kolonel Lek Dr. Arwin D.W. Sumari",
+   "institution": "TNI Angkatan Udara dan Politeknik Negeri Malang",
+   "title": "A Fast Object Recognizer with a Very Small Number of Information using Human Cognitive-Inspired Computation Mode",
+   "youtube": "https://www.youtube.com/watch?v=yCzOdIjRZQE",
+   "slides": [
+    "webinar-27.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-06-24",
+   "time": "16.00–17.00",
+   "speaker": "Dr. Ir. Esther Irawati Setiawan, S.Kom.,M.Kom.",
+   "institution": "Institut Sains dan Teknologi Terpadu Surabaya",
+   "title": "Improving Opinion Mining: Sentiment, Stance, and Multimodality",
+   "youtube": "https://www.youtube.com/watch?v=kcp8i5jPZpk",
+   "slides": [
+    "webinar-26.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-06-17",
+   "time": "16.00–17.00",
+   "speaker": "Dr. Suryadiputra",
+   "institution": "Universitas Bina Nusantara",
+   "title": "Akselerasi maxpool pada pengenalan obyek dan pengukuran panjang katsuwonus pelamis, Euthynnus Affinis, Coryphaena hippurus dan Loligo Chinensis menggunakan Convolutional Neural Network",
+   "youtube": "https://www.youtube.com/watch?v=Ok52WlazGbA",
+   "slides": [
+    "webinar-25.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-06-10",
+   "time": "16.00–17.30",
+   "speaker": "Prof. Pitoyo Hartono",
+   "institution": "Chukyo University, Japan",
+   "title": "Theory and Applications of Topological Representations in Hierarchical Neural Networks",
+   "youtube": "https://www.youtube.com/watch?v=uR_sGotqP0k",
+   "slides": [
+    "webinar-24.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-06-03",
+   "time": "16.00–17.00",
+   "speaker": "Muhammad Ghifary, PhD.",
+   "institution": "PT. Bank Rakyat Indonesia",
+   "title": "Towards Human Centered AI Banking of The Future",
+   "youtube": "https://www.youtube.com/watch?v=sXnXbBYhI04",
+   "slides": [
+    "webinar-23.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-05-27",
+   "time": "16.30–17.30",
+   "speaker": "Dr.Dessy Novita",
+   "institution": "Universitas Padjadjaran",
+   "title": "Socially Assistive Robot Interaction by Objects Detection and Face Recognition on Convolutional Neural Network for Parental Monitoring",
+   "youtube": "https://www.youtube.com/watch?v=J48zy95eOM4",
+   "slides": [
+    "webinar-22.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-05-20",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Anindya Apriliyanti Pravitasari",
+   "institution": "Universitas Padjadjaran",
+   "title": "3D MRI-based Brain Tumor Segmentation with YOLO-NENOMIMO",
+   "youtube": "https://www.youtube.com/watch?v=82AEwCafihs",
+   "slides": [
+    "webinar-21.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-04-29",
+   "time": "16.30–17.30",
+   "speaker": "Dr.Eng. Rosa Andrie Asmara, S.T., M.T.",
+   "institution": "Politeknik Negeri Malang",
+   "title": "Automatic Realtime Basketball Activity recognition in Smartwatch",
+   "youtube": "https://www.youtube.com/watch?v=Enyt0B7pNNs",
+   "slides": [
+    "webinar-20.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-04-22",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Ayi Purbasari",
+   "institution": "Universitas Pasundan",
+   "title": "Artificial Immune System Algorithm & Implementasinya",
+   "youtube": "https://www.youtube.com/watch?v=P6F9ldiWJks",
+   "slides": [
+    "webinar-19.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-04-08",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Chandra Kusuma Dewa",
+   "institution": "Universitas Islam Indonesia",
+   "title": "Deep Reinforcement Learning untuk Pembelajaran Robot",
+   "youtube": "https://www.youtube.com/watch?v=weoFFRmWAdc",
+   "slides": [
+    "webinar-18.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-04-01",
+   "time": "16.30–17.30",
+   "speaker": "Dr.rer.nat. Arli Aditya Parikesit, S.Si., M.Si.",
+   "institution": "Indonesia International Institute for Life Sciences (i3L)",
+   "title": "Prediksi Struktur 2D dan 3D RNA: Kasus SARS-CoV-2",
+   "youtube": "https://www.youtube.com/watch?v=bqHiDws-UBU",
+   "slides": [
+    "webinar-17.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-03-25",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Miranti Indar Mandasari",
+   "institution": "ITB",
+   "title": "Forensic Speaker Recognition",
+   "youtube": "https://www.youtube.com/watch?v=iVh42GKLuBo",
+   "slides": [
+    "webinar-16.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-03-11",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Rizal Fathoni",
+   "institution": "Lead Data Scientist Grab",
+   "title": "Introduction to Graph Machine Learning",
+   "youtube": "https://www.youtube.com/watch?v=HwRXLTEOhlA",
+   "slides": [
+    "webinar-14.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-03-04",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Setiawan Hadi",
+   "institution": "Universitas Padjadjaran",
+   "title": "Digital Reconstruction and Enhancement of Ancient Manuscript (Dream)",
+   "youtube": "https://www.youtube.com/watch?v=-qT0rBw62Es",
+   "slides": [
+    "webinar-13.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-02-25",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Khairun Saddami",
+   "institution": "Universitas Syiah Kuala",
+   "title": "Pemanfaatan deep learning untuk deteksi dini penyakit berbasis citra termal",
+   "youtube": "https://www.youtube.com/watch?v=L-syDt95Hcc",
+   "slides": [
+    "webinar-08.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-02-18",
+   "time": "16.30–17.30",
+   "speaker": "Prof.Dr. Budi Santosa",
+   "institution": "ITS",
+   "title": "Clustering menggunakan cat swarm optimization",
+   "youtube": "",
+   "slides": [
+    "webinar-07.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-02-11",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Mochamad Hariadi",
+   "institution": "ITS",
+   "title": "AI in game : Dynamic obstacle avoidance based on RVO (Reciprocal Velocity Obstacle)",
+   "youtube": "https://www.youtube.com/watch?v=t0YIoxIcLWM",
+   "slides": [
+    "webinar-06.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-02-04",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Afiahayati",
+   "institution": "Universitas Gadjah Mada",
+   "title": "Prediksi struktur sekunder protein menggunakan Deep Learning",
+   "youtube": "https://www.youtube.com/watch?v=upxDL1c366Q",
+   "slides": [
+    "webinar-05.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-01-28",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Made Windu Antara Kesiman",
+   "institution": "Universitas Pendidikan Ganesha, Bali",
+   "title": "Document Image Processing for Balinese Palm Leaf Manuscripts: Protocol, Scheme, and Challenges",
+   "youtube": "https://www.youtube.com/watch?v=f4cJS3j-ExI",
+   "slides": [
+    "webinar-05.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-01-21",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Elly Matul Imah",
+   "institution": "Universitas Negeri Surabaya",
+   "title": "Real-time Violence Detection in Surveillance Camera using Deep Transfer Learning Feature Extraction",
+   "youtube": "https://www.youtube.com/watch?v=CU00rP5D-sU",
+   "slides": [
+    "webinar-04.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2022-01-14",
+   "time": "16.30–17.30",
+   "speaker": "Iptu Eko Wahyu Bintoro, SH",
+   "institution": "Perwira Administrasi (Pamin) Identifikasi Wajah Bidang Fotografi Kepolisian (Bidtopol) Pusat Indonesia Automatic Fingerprint Identification System (Pusinafis) Bareskrim Polri",
+   "title": "Pemanfaatan Teknologi Pengenalan Wajah sebagai metode identifikasi dan mitigasi terjadinya fraud di Bareskrim Polri",
+   "youtube": "",
+   "slides": [],
+   "papers": []
+  },
+  {
+   "date": "2022-01-07",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Noor Akhmad Setiawan",
+   "institution": "Universitas Gadjah Mada",
+   "title": "Improving Electroencephalogram Based Motor Imagery",
+   "youtube": "https://www.youtube.com/watch?v=fiUkVPc-Wuw",
+   "slides": [
+    "webinar-02.pdf"
+   ],
+   "papers": []
+  },
+  {
+   "date": "2021-12-31",
+   "time": "16.30–17.30",
+   "speaker": "Dr. Intan Nurma Yulita, M.T.",
+   "institution": "Universitas Padjadjaran",
+   "title": "Sleep stage classification using Machine Learning",
+   "youtube": "https://www.youtube.com/watch?v=bbBBgxJE46k",
+   "slides": [
+    "webinar-01.pdf"
+   ],
+   "papers": []
+  }
+ ]
+}

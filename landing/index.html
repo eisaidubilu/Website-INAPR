@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>INAPR · Indonesian Association for Pattern Recognition</title>
+    <meta
+      name="description"
+      content="INAPR (Indonesian Association for Pattern Recognition) adalah komunitas nasional peneliti dan praktisi pengenalan pola, anggota resmi Indonesia pada International Association for Pattern Recognition (IAPR)."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <!--
+      Warna bilah browser. Nilai = --bg di src/styles/tokens.css (Terang / Gelap).
+      Script tema di bawah dan src/hooks/useTheme.ts menyamakan keduanya dengan tema yang tampil.
+    -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1e9e4" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#250001" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph / Twitter. og:image, og:url, kanonik, dan JSON-LD dipasang oleh config/seo-plugin.ts. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="INAPR" />
+    <meta property="og:title" content="INAPR · Indonesian Association for Pattern Recognition" />
+    <meta
+      property="og:description"
+      content="Komunitas nasional peneliti dan praktisi pengenalan pola di Indonesia."
+    />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:locale:alternate" content="en_GB" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="INAPR · Indonesian Association for Pattern Recognition" />
+    <meta
+      name="twitter:description"
+      content="Komunitas nasional peneliti dan praktisi pengenalan pola di Indonesia."
+    />
+
+    <!--
+      Set tema dan bahasa SEBELUM render supaya tidak ada flash tema salah.
+      Kunci localStorage harus sama dengan src/hooks/useTheme.ts dan src/i18n/useI18n.ts.
+    -->
+    <script>
+      ;(function () {
+        var root = document.documentElement
+        var pref = null
+        var lang = null
+        try {
+          pref = localStorage.getItem('inapr-theme')
+          lang = localStorage.getItem('inapr-lang')
+        } catch (e) {}
+        // Pilihan tersimpan ('light'/'dark') menang; selain itu ikut tema sistem.
+        var theme = pref === 'light' || pref === 'dark' ? pref : null
+        if (!theme) {
+          var dark = false
+          try {
+            dark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          } catch (e) {}
+          theme = dark ? 'dark' : 'light'
+        }
+        root.setAttribute('data-theme', theme)
+        root.setAttribute('lang', lang === 'en' ? 'en' : 'id')
+        // Bilah browser ikut tema yang tampil (nilai = --bg di tokens.css), juga bila
+        // pilihan tersimpan berbeda dari tema sistem.
+        var bar = theme === 'dark' ? '#250001' : '#f1e9e4'
+        var metas = document.querySelectorAll('meta[name="theme-color"]')
+        for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', bar)
+      })()
+    </script>
+
+    <!-- Tanpa JavaScript: sembunyikan kontrol yang butuh JS, tampilkan menu di mobile. -->
+    <noscript>
+      <style>
+        .js-only {
+          display: none !important;
+        }
+        @media (max-width: 767px) {
+          #site-menu {
+            display: flex !important;
+            order: 3;
+            flex-basis: 100%;
+            position: static !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            padding: 0 0 1rem !important;
+          }
+        }
+      </style>
+    </noscript>
+  </head>
+  <body>
+    <noscript>
+      <p class="m-0 border-b border-line bg-soft px-4 py-3 text-center text-[0.92rem] text-ink">
+        JavaScript nonaktif. Isi halaman tetap bisa dibaca; pencarian, daftar anggota, daftar
+        webinar, pilihan tema/bahasa, dan latar animasi memerlukan JavaScript.
+        <span lang="en">JavaScript is off: the content stays readable, interactive parts need JavaScript.</span>
+      </p>
+    </noscript>
+    <!-- Diisi HTML hasil prerender saat build (scripts/prerender.mjs), lalu diambil alih React. -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

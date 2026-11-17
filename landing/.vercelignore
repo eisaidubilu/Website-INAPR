@@ -1,0 +1,11 @@
+# File yang TIDAK diunggah saat deploy lewat Vercel CLI (`vercel` / `vercel --prod`).
+# Vercel membangun ulang sendiri (npm install + npm run build), jadi hasil build lokal
+# dan node_modules tidak perlu dikirim. File env lokal tidak boleh ikut terunggah:
+# variabel untuk Vercel diisi di Settings > Environment Variables.
+node_modules
+dist
+dist-ssr
+.env
+.env.*
+!.env.example
+*.log

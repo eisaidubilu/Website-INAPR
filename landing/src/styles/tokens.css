@@ -1,0 +1,97 @@
+/*
+ * Design tokens INAPR.
+ * Nilai mentah ada di :root (tema terang) dan di-override di [data-theme="dark"].
+ * Atribut data-theme selalu di-set oleh script di index.html sebelum render,
+ * lalu dijaga oleh src/hooks/useTheme.ts.
+ *
+ * Token titik (--titik-1/2/3 dan --titik-baca-1/2/3) dibaca oleh engine 3D di tahap 2 lewat getComputedStyle.
+ */
+:root {
+  /* Terang: krem hangat, bukan putih polos. Kontras teks dicek WCAG AA (README). */
+  --bg: #f1e9e4;
+  --surface: #faf5f2;
+  --ink: #250001;
+  --accent: #a50104;
+  /* Satu-satunya putih: teks di atas --accent. */
+  --accent-ink: #ffffff;
+  --muted: #6b4f50;
+  --line: #d9cac4;
+  --mat: #e8ddd8;
+  --grid-minor: #d9cbc5;
+  --grid-major: #bda9a3;
+  --soft: #f4e1de;
+  --titik-1: #a50104;
+  --titik-2: #250001;
+  --titik-3: #fcba04;
+  /*
+   * Warna titik saat MEMBACA (di shader dicampur ke --titik-* menuju puncak jeda). Tidak
+   * boleh sama/dekat dengan --ink. Kontras teks isi di atas satu titik beropasitas
+   * readIntensity dicek: `node scripts/check-reading-contrast.mjs`. Rose (dari --accent)
+   * dan tint netral sudah dicampur ke arah latar supaya --muted tetap >= 4,5:1.
+   */
+  --titik-baca-1: #d7a6a3;
+  --titik-baca-2: #fcba04;
+  --titik-baca-3: #c0ada7;
+
+  /*
+   * Tinggi navbar/banner sticky. Nilai awal = hasil ukur per breakpoint (satu baris
+   * < 768px dan ≥ 1280px, dua baris di antaranya), supaya tidak ada layout shift
+   * sebelum src/hooks/useHeaderMetrics.ts mengukur ulang.
+   */
+  --nav-h: 65px;
+  --banner-h: 44px;
+
+  @media (min-width: 768px) {
+    --nav-h: 107px;
+    --banner-h: 28px;
+  }
+  @media (min-width: 1280px) {
+    --nav-h: 65px;
+  }
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #250001;
+  --surface: #310305;
+  --ink: #f3f3f3;
+  --accent: #fcba04;
+  --accent-ink: #250001;
+  --muted: #b8a3a4;
+  --line: #590004;
+  --mat: #2e0204;
+  --grid-minor: #42050a;
+  --grid-major: #6e0c12;
+  --soft: #3a0407;
+  --titik-1: #fcba04;
+  --titik-2: #f3f3f3;
+  --titik-3: #a50104;
+  --titik-baca-1: #ac7204;
+  --titik-baca-2: #957a7b;
+  --titik-baca-3: #a50104;
+
+  color-scheme: dark;
+}
+
+/* Daftarkan token ke Tailwind: bg-bg, text-ink, border-line, bg-accent, dst. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-mat: var(--mat);
+  --color-grid-minor: var(--grid-minor);
+  --color-grid-major: var(--grid-major);
+  --color-soft: var(--soft);
+  --color-titik-1: var(--titik-1);
+  --color-titik-2: var(--titik-2);
+  --color-titik-3: var(--titik-3);
+
+  --font-heading: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  --font-sub: 'Lato', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Hind Siliguri', 'Segoe UI', system-ui, sans-serif;
+}

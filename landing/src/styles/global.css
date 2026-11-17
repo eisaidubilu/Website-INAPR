@@ -1,0 +1,239 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Panel tuning dev (src/dev) punya CSS sendiri; kelasnya tidak boleh masuk CSS produksi. */
+@source not "../dev";
+
+/*
+ * Latar "cutting mat": garis tipis tiap 24px, garis tebal tiap 120px.
+ * Dipakai di <main>; sekaligus fallback saat WebGL tidak tersedia.
+ * --mat-offset di-set engine titik untuk parallax. Didaftarkan tanpa pewarisan
+ * supaya perubahan tiap frame tidak memicu hitung ulang style seluruh isi <main>.
+ */
+@property --mat-offset {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@utility cutting-mat {
+  background-color: var(--mat);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size:
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+  background-position: 0 var(--mat-offset, 0px);
+}
+
+/*
+ * ---- Micro interaction berbasis pointer (src/hooks/usePointerFx.ts) ----
+ * Penanda kelas di src/lib/ui.ts. Hanya transform/opacity; tidak ada perubahan ukuran
+ * atau posisi tata letak. Hover hanya untuk (hover: hover) and (pointer: fine); padanan
+ * keyboard lewat :focus-visible. Reduced motion: JS tidak menggerakkan apa pun dan
+ * transisi menjadi instan (aturan di @layer base).
+ */
+
+/* Sorotan kartu interaktif: gradien radial di bawah isi kartu, mengikuti --mx/--my. */
+.fx-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.fx-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    18rem circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+.fx-spotlight:has(:focus-visible)::before {
+  opacity: 1;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fx-spotlight:hover::before {
+    opacity: 1;
+  }
+}
+
+/*
+ * Tombol magnetik: transform terpisah dari properti `translate` (efek naik 2px Tailwind),
+ * jadi keduanya bergabung. transition-property ditimpa supaya transform ikut beranimasi;
+ * durasi tetap dari kelas Tailwind tombol.
+ */
+.fx-magnetic {
+  transform: translate(var(--mag-x, 0px), var(--mag-y, 0px));
+  transition-property: color, background-color, border-color, translate, transform;
+}
+
+/* Riak klik tombol utama: lingkaran dari titik klik, membesar lalu memudar. */
+.fx-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.fx-ripple-wave {
+  position: absolute;
+  top: var(--ry);
+  left: var(--rx);
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: currentColor;
+  pointer-events: none;
+  opacity: 0;
+  animation: fx-ripple 600ms ease-out;
+}
+@keyframes fx-ripple {
+  from {
+    opacity: 0.35;
+    transform: scale(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(var(--rs, 20));
+  }
+}
+
+/*
+ * Drag putar bentuk titik 3D (src/pointfield/engine.ts memasang kelas di <html>):
+ * pf-grab = pointer di area kosong saat bentuk tampil; pf-grabbing = sedang di-drag
+ * (seleksi teks dimatikan selama drag).
+ */
+html.pf-grab main {
+  cursor: grab;
+}
+html.pf-grabbing,
+html.pf-grabbing * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+/*
+ * Tombol tema (src/components/ThemeToggle.tsx): ikon = tema yang AKTIF (matahari = Terang,
+ * bulan = Gelap). Dipilih dari data-theme di <html> (di-set sebelum render), jadi benar
+ * sejak paint pertama. Berganti dengan putar + skala + crossfade ±200ms; instan saat
+ * reduced motion (aturan di @layer base).
+ */
+.theme-icon {
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+:root[data-theme='dark'] .theme-icon-sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+:root:not([data-theme='dark']) .theme-icon-moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.5);
+}
+
+/*
+ * ---- Animasi mikro ----
+ * Semua di balik prefers-reduced-motion: no-preference; hanya opacity/transform,
+ * kecuali transisi warna saat ganti tema (permintaan eksplisit).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * Reveal saat scroll (src/hooks/useReveal.ts). Elemen hanya disembunyikan bila JS
+   * memasang .reveal-armed di <html> DAN data-reveal-pending di elemen, jadi tanpa JS
+   * (atau bila JS gagal) konten tetap terlihat.
+   */
+  .reveal-armed [data-reveal-pending] {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .reveal-armed [data-reveal-active] {
+    transition:
+      opacity 560ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms),
+      transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--reveal-delay, 0ms);
+  }
+
+  /* Ganti tema (src/hooks/useTheme.ts): warna latar/teks/garis bertransisi ±200ms. */
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition-property: background-color, border-color, color, fill, stroke, outline-color !important;
+    transition-duration: 200ms !important;
+    transition-timing-function: ease-out !important;
+    transition-delay: 0ms !important;
+  }
+  /* Ikon tombol tema tetap berputar + crossfade saat tema berganti. */
+  html.theme-transition .theme-icon {
+    transition-property: opacity, transform, stroke !important;
+  }
+
+  /* Ganti bahasa (src/components/LangToggle.tsx): crossfade View Transitions. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 200ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+@layer base {
+  html {
+    scroll-padding-top: calc(var(--nav-h) + 1rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

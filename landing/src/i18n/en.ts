@@ -1,0 +1,237 @@
+import type { Dictionary } from './types'
+
+const LOREM_SHORT = 'Lorem ipsum dolor sit amet consectetur.'
+const LOREM_LONG =
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
+
+/** English dictionary. Must mirror id.ts; facts only from KONTEN-LAMA.md. */
+export const en: Dictionary = {
+  meta: {
+    title: 'INAPR · Indonesian Association for Pattern Recognition',
+    description:
+      "INAPR (Indonesian Association for Pattern Recognition) is Indonesia's national community of pattern recognition researchers and practitioners, and the country's official member of the International Association for Pattern Recognition (IAPR).",
+  },
+  banner: 'Layout draft: content is placeholder (lorem ipsum), not final',
+  common: {
+    locale: 'en-GB',
+    placeholder: 'placeholder',
+    placeholderHint: 'This block is sample content, not final.',
+    linkPending: 'link not available yet',
+    skipToContent: 'Skip to content',
+    loading: 'Loading data…',
+    loadError: 'Could not load the data. Reload the page to try again.',
+    newTab: 'opens in a new tab',
+    pagination: {
+      prev: 'Previous',
+      next: 'Next',
+      page: (page, pages) => `Page ${page} of ${pages}`,
+    },
+  },
+  nav: {
+    label: 'Main navigation',
+    railLabel: 'Jump to section',
+    home: 'INAPR, back to top',
+    items: {
+      tentang: 'About',
+      kegiatan: 'Activities',
+      bidang: 'Research',
+      publikasi: 'Publications',
+      anggota: 'Members',
+      gabung: 'Membership',
+      berita: 'News',
+    },
+    cta: 'Become a Member',
+    openMenu: 'Menu',
+    closeMenu: 'Close',
+    theme: { toDark: 'Switch to dark mode', toLight: 'Switch to light mode' },
+    langLabel: 'Language',
+  },
+  tentang: {
+    eyebrow: 'Indonesian Association for Pattern Recognition',
+    title: {
+      lead: 'The national community of ',
+      accent: 'pattern recognition',
+      trail: ' researchers and practitioners.',
+    },
+    sub: "Founded in 2017 as Indonesia's official member of the International Association for Pattern Recognition (IAPR).",
+    ctaPrimary: 'Become a member',
+    ctaSecondary: 'See activities',
+    whatTitle: 'What is pattern recognition?',
+    whatBody: 'Pattern recognition is a computing technology with wide-ranging applications, including:',
+    applications: [
+      'artificial intelligence',
+      'robotics',
+      'biometrics',
+      'bioinformatics',
+      'computer vision',
+      'forensics',
+      'speech recognition',
+      'handwriting recognition',
+      'big data',
+    ],
+    membershipNote:
+      'Official IAPR membership was approved by the IAPR Governing Board on 22 August 2018 at ICPR 2018, Beijing, and announced in the IAPR Newsletter Vol. 40 No. 4, October 2018, p. 8.',
+    stats: [
+      { value: '348', label: 'active members (as of 19 April 2020)' },
+      { value: '2017', label: 'year founded' },
+      { value: '2018', label: 'approved as official IAPR member' },
+      { value: '000', label: 'institutions', placeholder: true },
+    ],
+  },
+  kegiatan: {
+    eyebrow: 'Activities',
+    title: { lead: 'Activity ', accent: 'record', trail: ' 2018–2022' },
+    source:
+      'Source: the old inapr.org site archive. Activities after September 2022 await data from the board.',
+    featured: {
+      date: { top: 'SEP 2018', main: '07' },
+      tag: 'Conference',
+      title: 'First INAPR Conference',
+      meta: 'Friday, 7 September 2018 · Bina Nusantara University, Alam Sutera Campus, Tangerang',
+      keynoteLabel: 'Keynote speakers',
+      keynotes: [
+        'Prof. Dr. Pitoyo Hartono (Chukyo University)',
+        'Dr. Setiawan Hadi (Universitas Padjadjaran)',
+        'Prof. Antoine Doucet (L3i, La Rochelle)',
+      ],
+    },
+    items: [
+      {
+        date: { top: 'JUN 2018', main: '26–28' },
+        tag: 'International',
+        title: '10th France–Indonesia Joint Working Group',
+        meta: 'Poitiers, France',
+      },
+      {
+        date: { top: 'AUG 2018', main: '19–25' },
+        tag: 'International',
+        title: 'ICPR 2018: INAPR approved as an IAPR member',
+        meta: 'Beijing, China · International Association for Pattern Recognition (IAPR)',
+      },
+      {
+        date: { top: 'NOV 2019', main: '08' },
+        tag: 'Guest lecture',
+        title: 'Guest lecture by Dr. Elly Matul Imah',
+        meta: 'STIKI Malang',
+      },
+      {
+        date: { top: 'DEC 2019', main: '10' },
+        tag: 'Guest lecture',
+        title: 'Guest lecture on e-KTP biometrics',
+        meta: 'Dr. Anto S. Nugroho and Gembong S. Wibowanto (BPPT) · Undiksha, Singaraja',
+      },
+      {
+        date: { top: 'SEP 2020', main: '28' },
+        tag: 'Event support',
+        title: 'Supporting ICONETSI',
+      },
+      {
+        date: null,
+        tag: 'Involvement',
+        title: 'Indonesia Artificial Intelligence Summit (AIS 2020)',
+      },
+      {
+        date: null,
+        tag: 'Task force',
+        title: 'Task Force Technology Research and Innovation (TFRIC19)',
+        meta: 'Artificial intelligence for the Covid-19 response',
+      },
+    ],
+    webinar: {
+      title: 'Weekly webinar',
+      summary: (count, range) => `${count} sessions recorded, ${range}.`,
+      searchLabel: 'Search webinars',
+      searchPlaceholder: 'Title, speaker, or institution',
+      yearLabel: 'Filter by year',
+      allYears: 'All years',
+      watch: 'Watch',
+      slide: 'Slides',
+      noVideo: 'No recording available',
+      showMore: 'Show more',
+      showing: (shown, total) => `Showing ${shown} of ${total} sessions`,
+      empty: 'No webinars match this search.',
+    },
+  },
+  bidang: {
+    eyebrow: 'Research areas',
+    title: { lead: 'What members ', accent: 'work on' },
+    items: [1, 2, 3, 4, 5, 6].map((n) => ({
+      name: `Research area ${n}`,
+      desc: LOREM_SHORT,
+      counts: '00 members · 00 publications',
+    })),
+  },
+  publikasi: {
+    eyebrow: 'Publications',
+    title: { lead: 'Latest ', accent: 'publications' },
+    more: 'All publications',
+    read: 'Read',
+    items: [1, 2, 3].map(() => ({
+      year: '0000',
+      title: 'Lorem ipsum dolor sit amet consectetur',
+      authors: 'Author Name, Author Name · Institution',
+      tag: 'Lorem',
+    })),
+  },
+  anggota: {
+    eyebrow: 'Members',
+    title: { lead: 'Member ', accent: 'directory' },
+    total: '348',
+    totalLabel: 'registered members',
+    asOf: 'as of 19 April 2020',
+    intro:
+      'Names from the old inapr.org site archive, in alphabetical order. The source only lists names, so institutions are not shown yet.',
+    searchLabel: 'Search member names',
+    searchPlaceholder: 'Type part of a name',
+    caption: 'INAPR members as of 19 April 2020, alphabetical',
+    columns: { no: 'No.', name: 'Name' },
+    showing: (from, to, total) => `Showing ${from}–${to} of ${total} names`,
+    empty: (query) => `No names match “${query}”.`,
+    paginationLabel: 'Member list pages',
+  },
+  gabung: {
+    eyebrow: 'Membership',
+    title: { lead: 'How to ', accent: 'join' },
+    sub: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit sed do eiusmod.',
+    steps: [
+      { title: 'Step one', desc: 'Lorem ipsum dolor sit amet.' },
+      { title: 'Step two', desc: 'Consectetur adipiscing elit.' },
+      { title: 'Step three', desc: 'Sed do eiusmod tempor.' },
+    ],
+    cta: 'Open registration form',
+    benefitsTitle: 'Member benefits',
+    benefits: ['Lorem ipsum dolor sit amet', 'Consectetur adipiscing elit', 'Sed do eiusmod tempor'],
+    feeLabel: 'Annual fee',
+    fee: 'IDR 000,000',
+  },
+  afiliasi: {
+    eyebrow: 'Affiliation',
+    title: { lead: 'Part of the ', accent: 'IAPR', trail: ' network' },
+    sub: "INAPR is Indonesia's official member of the International Association for Pattern Recognition (IAPR), the worldwide umbrella body for pattern recognition. The membership was approved at ICPR 2018 in Beijing.",
+    logos: ['IAPR logo', 'Partner', 'Partner'],
+  },
+  berita: {
+    eyebrow: 'News',
+    title: { lead: 'Latest ', accent: 'news' },
+    more: 'All news',
+    items: [1, 2, 3].map(() => ({
+      date: 'DD MON YEAR',
+      title: 'News headline lorem ipsum dolor sit',
+      body: LOREM_LONG,
+    })),
+  },
+  footer: {
+    tagline: 'Indonesian Association for Pattern Recognition.',
+    explore: 'Explore',
+    organization: 'Organization',
+    affiliation: 'International affiliation (IAPR)',
+    contact: 'Contact',
+    addressLabel: 'Address',
+    address: [
+      'Jalan Melong Cijerah IV Nomor 14, RT.003/RW 003',
+      'Kecamatan Bandung Kulon, Kota Bandung',
+    ],
+    email: 'email@lorem.ipsum',
+    fine: 'Layout draft, some content is still placeholder.',
+  },
+}
