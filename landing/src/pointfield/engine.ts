@@ -7,6 +7,27 @@
  *   intensitas bentuk I. Section selalu netral (I = 0, hanya bintang); di tiap jeda:
  *   ZOOM IN + bentuk terbentuk → TAHAN → LEPAS + ZOOM OUT. I menggerakkan morph titik
  *   bentuk DAN posisi kamera pada jalurnya, jadi keduanya selalu sinkron.
+ * - SCRUBBED: animasi menempel ke scroll, tanpa jam sendiri. T hanya mengikuti posisi scroll dengan
+ *   smoothing ringan (params.smoothing), jadi animasi jeda tidak pernah main setelah posisi scroll
+ *   di luar jeda. Di section keadaan selalu netral (intensitas 0). SETTLE hanya menyelesaikan
+ *   intensitas bentuk setengah jadi di jeda yang sama; tidak menggerakkan T dan tidak pernah
+ *   menggerakkan posisi scroll.
+ * - Engine TIDAK PERNAH menggerakkan posisi scroll: tanpa gerbang/penarik ke jeda, tanpa
+ *   pemulihan posisi saat resize. Scroll sepenuhnya native (momentum roda/trackpad/sentuh utuh).
+ *   Flick yang melewati jeda cukup melewatinya: begitu posisi scroll ada di section, T dijepit ke
+ *   tepi section itu (sisa jeda tidak dimainkan); bila T tertinggal lebih dari JUMP_ELEMENTS ia
+ *   langsung disamakan. Di section tujuan intensitas selalu 0, jadi bentuk surut cepat
+ *   (SETTLE.scrollRate) tanpa sisa setengah jadi.
+ * - RENTANG EFEKTIF (extendBreaks di scrollmap.ts): tiap jeda melebar edgeLeadVh ke akhir section
+ *   sebelumnya dan edgeTrailVh ke awal section berikutnya. T dihitung atas rentang efektif ini
+ *   (effTops/effHeights), jadi fase jeda proporsional atas lead + jeda + trail, section netral di
+ *   luarnya, dan rotasi pandang section baru mulai setelah trail. Reduced motion: tanpa tepi.
+ * - PEREDAM RODA (wheeldamp.ts, params.scrollDamping): delta roda diperkecil menurut intensitas jeda
+ *   di posisi itu (scrollmap.dampFactorAt): berat hanya saat bentuk terlihat, 1 di lead, zoom in
+ *   awal, zoom out akhir, trail, dan di luar rentang efektif. Di dalam konten (section) scroll
+ *   normal tanpa peredam; berhenti rapi di awal section dikerjakan scroll-snap CSS (global.css).
+ *   Satu-satunya penulis scrollY selain navigasi eksplisit; hanya memproses delta roda pengguna,
+ *   tidak pernah menarik posisi.
  * - ARAH ZOOM (kiri/kanan/atas/bawah/sudut) per jeda bukan posisi bentuk di layar, melainkan
  *   ke mana kamera menyimpang: titik fokus C = arah zoom × zoomReach dari pusat field.
  *   Kamera bergerak di kurva Bézier kuadratik dari pose netral (jarak cameraFar, melihat
@@ -52,6 +73,7 @@ import {
 } from 'three'
 import {
   COLOR_TOKENS,
+  EDGE,
   FOV,
   GEOMETRY_KEYS,
   MAX_PIXEL_RATIO,
@@ -59,6 +81,7 @@ import {
   POINTER,
   POINTFIELD_DEFAULTS,
   READ_COLOR_TOKENS,
+  readStats,
   SAFE_ZONE,
   SETTLE,
   ZOOM_FX,
@@ -66,8 +89,19 @@ import {
   type ZoomDirection,
 } from '@/config/pointfield'
 import { buildPointData, SHAPE_BASE_RADIUS, type PointData } from './geometry'
-import { computeFrame, createFrameState, lerp, phaseBounds, scrollTarget, type SeqItem } from './scrollmap'
+import {
+  computeFrame,
+  createFrameState,
+  dampEquivalentVh,
+  dampFactorAt,
+  extendBreaks,
+  lerp,
+  phaseBounds,
+  scrollTarget,
+  type SeqItem,
+} from './scrollmap'
 import { fragmentShader, vertexShader } from './shaders'
+import { createWheelDamper, type DampDebug } from './wheeldamp'
 
 export type DeviceKind = 'desktop' | 'lowPower' | 'mobile'
 
@@ -104,12 +138,21 @@ export interface PointFieldDebug {
   colors: string[]
   /** Warna baca saat ini (hex). */
   readColors: string[]
-  /** Intensitas keterbacaan saat ini: I = lerp(readIntensity, 1, uPeak). */
-  readI: number
+  /**
+   * Opasitas efektif rata-rata saat ini di area tanpa teks: dari target baca (desktop:
+   * readIntensity, tanpa zona aman: readIntensityMobile) ke rata-rata penuh di puncak jeda.
+   */
+  effective: number
   /** Puncak jeda ter-ease (0 = membaca, 1 = puncak). */
   peak: number
   /** Zona aman: aktif/tidak dan rect kolom konten (px layar). */
   safeZone: { on: boolean; left: number; right: number }
+  /** Rentang efektif jeda (px dokumen: awal, akhir) setelah lead/trail; untuk panel dan pengujian. */
+  zones: [number, number][]
+  /** Setara berat roda per jeda (vh): ∫ 1/faktor sepanjang rentang efektif terukur (termasuk batas EDGE). */
+  dampEquivVh: number[]
+  /** Peredam roda. */
+  damp: DampDebug
 }
 
 export interface PointFieldEngine {
@@ -140,9 +183,9 @@ const FRAME_MS = 1000 / 60
 /** Batas dt per frame: setelah tab kembali / jank, waktu dan T tidak melonjak. */
 const MAX_DT_MS = 50
 /**
- * Bila T tertinggal lebih dari ini (dalam jumlah elemen) dari posisi scroll (mis. tombol
- * End, resize besar, lompatan instan), T langsung disamakan: tidak memutar melewati
- * banyak bentuk dalam sekejap.
+ * Bila T tertinggal lebih dari ini (dalam jumlah elemen) dari posisi scroll (mis. tombol End,
+ * resize besar, lompatan instan), T langsung disamakan: tidak memutar melewati banyak bentuk
+ * dalam sekejap. Pada gerak scroll biasa (smoothing ~0,28) T hampir tidak pernah tertinggal.
  */
 const JUMP_ELEMENTS = 1.5
 /** Scroll dianggap selesai bila tidak ada event scroll selama ini (fallback scrollend). */
@@ -308,6 +351,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     uReadColor3: { value: colors[5] },
     uPeak: { value: 0 },
     uReadI: { value: params.readIntensity },
+    uReadGain: { value: 1 },
     uReadSize: { value: params.readSize },
     uReadMax: { value: params.readMaxPx },
     uSafeX: { value: new Vector2(0, 0) },
@@ -362,8 +406,12 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
       return { el, kind: isBreak ? 'break' : 'section', index: Number(isBreak ? el.dataset.break : el.dataset.section) }
     },
   )
+  /** Posisi DOM tiap elemen (px dokumen). */
   const tops = new Float64Array(seq.length)
   const heights = new Float64Array(seq.length)
+  /** Rentang efektif (jeda + lead/trail, section menyusut): dasar T dan zona peredam. */
+  const effTops = new Float64Array(seq.length)
+  const effHeights = new Float64Array(seq.length)
   const mat = host.closest<HTMLElement>('main')
 
   const state = createFrameState(params)
@@ -404,10 +452,6 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   const colorFrom = makeColors()
   const colorTo = makeColors()
   let colorStart = -1
-  /** Posisi scroll terakhir yang diukur dengan tata letak lama (jangkar saat resize). */
-  let lastTarget = -1
-  let viewWidth = document.documentElement.clientWidth
-  let viewHeight = document.documentElement.clientHeight
 
   // ---- Pointer (ditulis oleh listener, dibaca sekali per frame) ----
   /** Posisi pointer terakhir (NDC) dan posisi yang dihaluskan untuk dorong/parallax. */
@@ -468,10 +512,10 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     uniforms.uNearFade.value = Math.max(0.2, params.nearFade)
     uniforms.uSizeVar.value = params.sizeVariation
     uniforms.uBrightVar.value = params.brightnessVariation
-    uniforms.uReadI.value = Math.min(1, Math.max(0, params.readIntensity))
     uniforms.uReadSize.value = Math.max(0, params.readSize)
     uniforms.uReadMax.value = Math.max(0.5, params.readMaxPx) * (pixelRatio || 1)
     uniforms.uSafeFactor.value = Math.min(1, Math.max(0, params.safeZoneFactor))
+    applyReadTarget()
     euler.set(params.revolutionTiltX, 0, params.revolutionTiltZ, 'XYZ')
     uniforms.uRevTilt.value.setFromMatrix4(matrix.makeRotationFromEuler(euler))
   }
@@ -526,11 +570,28 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     applySafeZone()
   }
 
+  /**
+   * Opasitas efektif target saat membaca: readIntensity di desktop (zona aman aktif),
+   * readIntensityMobile di layar tanpa zona aman. gain = target / rata-rata opasitas puncak
+   * titik (readStats), supaya nilai config = hasil terlihat.
+   */
+  function readTarget(): number {
+    const target = uniforms.uSafeOn.value > 0 ? params.readIntensity : params.readIntensityMobile
+    return Math.min(1, Math.max(0, target))
+  }
+
+  function applyReadTarget(): void {
+    const target = readTarget()
+    uniforms.uReadI.value = target
+    uniforms.uReadGain.value = target / readStats(params).mean
+  }
+
   /** Px layar → NDC x untuk shader. Mati di bawah SAFE_ZONE.minWidth (mobile) atau tanpa kolom. */
   function applySafeZone(): void {
     const w = width || host.clientWidth
     const on = w >= SAFE_ZONE.minWidth && safeRight > safeLeft
     uniforms.uSafeOn.value = on ? 1 : 0
+    applyReadTarget()
     if (!w) return
     uniforms.uSafeX.value.set((safeLeft / w) * 2 - 1, (safeRight / w) * 2 - 1)
     uniforms.uSafeFeather.value = (SAFE_ZONE.feather / w) * 2
@@ -543,8 +604,26 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
       tops[i] = rect.top + y
       heights[i] = rect.height || 1
     }
+    measureRanges()
     measureSafeZone()
     dirty = true
+  }
+
+  /** Rentang efektif dari tops/heights DOM + tepi lead/trail (vh → px). Reduced motion: tanpa tepi. */
+  function measureRanges(): void {
+    const vh = (document.documentElement.clientHeight || window.innerHeight) / 100
+    const lead = reduce ? 0 : Math.max(0, params.edgeLeadVh) * vh
+    const trail = reduce ? 0 : Math.max(0, params.edgeTrailVh) * vh
+    extendBreaks(seq, tops, heights, lead, trail, EDGE.maxSectionFraction, effTops, effHeights)
+  }
+
+  /**
+   * Faktor peredam roda di posisi tengah viewport `mid` (scrollmap.dampFactorAt): mengikuti
+   * intensitas jeda m di posisi itu, jadi berat hanya saat bentuk terlihat; 1 di luar rentang
+   * efektif jeda.
+   */
+  function dampFactorHere(mid: number): number {
+    return params.scrollDamping ? dampFactorAt(mid, seq, effTops, effHeights, params) : 1
   }
 
   function resize(): boolean {
@@ -809,7 +888,8 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     dragVelY = 0
     updateCursor()
     if (reduce) mat?.style.removeProperty('--mat-offset')
-    T = scrollTarget(tops, heights, seq.length)
+    measureRanges() // tepi lead/trail mati saat reduced motion
+    T = scrollTarget(effTops, effHeights, seq.length)
     anchorDirty = true
     dirty = true
   }
@@ -833,8 +913,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     const dt = lastTime ? Math.min(MAX_DT_MS, Math.max(0, now - lastTime)) : FRAME_MS
     lastTime = now
     const fading = stepColors(now)
-    const target = scrollTarget(tops, heights, seq.length)
-    lastTarget = target
+    const target = scrollTarget(effTops, effHeights, seq.length)
 
     if (reduce) {
       // Statis: render hanya bila bentuk aktif berubah atau ada yang lain berubah.
@@ -872,9 +951,19 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
         T = target
         resetPrev = true
       } else {
-        // Smoothing per frame 60 fps, dikonversi ke dt nyata (konsisten di 30/60/120 Hz).
+        // Scrubbed: T mengikuti scroll dengan smoothing ringan (per frame 60 fps, dikonversi ke
+        // dt nyata: konsisten di 30/60/120 Hz). Tanpa pembatas laju dan tanpa jam sendiri.
         T += (target - T) * (1 - (1 - params.smoothing) ** step)
         if (Math.abs(target - T) < SETTLE_EPSILON) T = target
+      }
+      // Posisi scroll sudah di section, tetapi T (smoothing) masih di elemen lain, biasanya jeda
+      // yang baru dilewati flick: T dijepit ke tepi section itu, jadi sisa jeda tidak dimainkan
+      // setelah posisi scroll keluar dari jeda. Pada scroll pelan T sudah di tepi, jadi tanpa lompatan.
+      const at = Math.floor(target)
+      if (seq[at]?.kind === 'section' && Math.floor(T) !== at) {
+        const clamped = T < at ? at : at + 1 - SETTLE_EPSILON
+        if (Math.abs(clamped - T) > 0.01) resetPrev = true
+        T = clamped
       }
     }
     computeFrame(T, seq, state, params)
@@ -889,7 +978,8 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     }
     // Menukar bentuk (bentuk lain masih termuat) selalu cepat; menyelesaikan scroll yang berhenti pelan.
     const swapping = state.shape >= 0 && state.shape !== currentShape
-    const rate = idle && !swapping ? SETTLE.rate : SETTLE.scrollRate
+    // Di section (state.shape < 0) tujuan selalu 0: surutkan cepat, tanpa sisa gerak zoom/bentuk.
+    const rate = idle && !swapping && state.shape >= 0 ? SETTLE.rate : SETTLE.scrollRate
     intensity += (goal - intensity) * (1 - (1 - rate) ** step)
     if (Math.abs(goal - intensity) < 0.0005) intensity = goal
     if (state.shape >= 0 && state.shape !== currentShape && intensity < RELEASED) {
@@ -949,7 +1039,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
    */
   function endNavigation(force = false): void {
     if (!navigating) return
-    if (force !== true && Math.abs(scrollTarget(tops, heights, seq.length) - navIndex) > 1.2) return
+    if (force !== true && Math.abs(scrollTarget(effTops, effHeights, seq.length) - navIndex) > 1.2) return
     navigating = false
     window.clearTimeout(navIdleTimer)
     window.clearTimeout(navMaxTimer)
@@ -998,25 +1088,11 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   }
 
   /**
-   * Resize / rotasi: tinggi section berubah, tetapi browser mempertahankan scrollY,
-   * sehingga progres di dalam elemen bisa melompat (mis. jeda dari 30% ke 75%).
-   * Kembalikan scroll ke progres relatif yang sama (elemen + fraksi) sebelum resize.
-   * Hanya bila viewport tata letak berubah (lebar atau clientHeight), bukan saat bar
-   * alamat mobile menyusut (yang hanya mengubah innerHeight).
+   * Resize / rotasi: ukur ulang saja. Posisi scroll tidak disentuh (scroll anchoring browser
+   * yang menjaga isi); T menyusul posisi baru lewat smoothing / JUMP_ELEMENTS.
    */
   function onResize(): void {
-    const root = document.documentElement
-    const changed = root.clientWidth !== viewWidth || root.clientHeight !== viewHeight
-    viewWidth = root.clientWidth
-    viewHeight = root.clientHeight
     measure()
-    if (changed && !reduce && !navigating && seq.length > 0) {
-      const anchor = lastTarget >= 0 ? lastTarget : T
-      const i = Math.max(0, Math.min(seq.length - 1, Math.floor(anchor)))
-      const mid = tops[i] + heights[i] * Math.min(1, anchor - i)
-      const y = Math.max(0, Math.round(mid - viewHeight / 2))
-      if (Math.abs(y - window.scrollY) > 1) window.scrollTo({ top: y, behavior: 'instant' })
-    }
     anchorDirty = true
     schedule()
   }
@@ -1034,6 +1110,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
       old.dispose()
     }
     applyParamUniforms()
+    measureRanges() // tepi jeda bisa berubah
     // Paksa mat dihitung ulang dan posisi bentuk diukur ulang dengan parameter baru.
     matOffset = Number.NaN
     anchorDirty = true
@@ -1164,6 +1241,11 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   window.addEventListener('touchmove', onTouchMove, passive)
   window.addEventListener('touchend', onTouchEnd, passive)
   window.addEventListener('touchcancel', onTouchEnd, passive)
+  // Peredam roda: tidak aktif saat reduced motion dan selama navigasi anchor jauh (T ditahan).
+  const damper = createWheelDamper({
+    enabled: () => params.scrollDamping && !reduce && !navigating && !destroyed,
+    factorAt: dampFactorHere,
+  })
   if ('fonts' in document) {
     document.fonts.ready.then(() => {
       if (!destroyed) remeasure()
@@ -1175,6 +1257,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     destroyed = true
     window.cancelAnimationFrame(raf)
     raf = 0
+    damper.destroy()
     resizeObserver.disconnect()
     window.clearTimeout(navIdleTimer)
     window.clearTimeout(navMaxTimer)
@@ -1232,7 +1315,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
       const f = state.progress
       return {
         T,
-        target: scrollTarget(tops, heights, seq.length),
+        target: scrollTarget(effTops, effHeights, seq.length),
         item: state.item,
         kind: item?.kind ?? null,
         index: item?.index ?? -1,
@@ -1250,9 +1333,16 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
         geometryVersion,
         colors: colors.slice(0, 3).map((color) => color.getHexString()),
         readColors: colors.slice(3).map((color) => color.getHexString()),
-        readI: uniforms.uReadI.value + (1 - uniforms.uReadI.value) * uniforms.uPeak.value,
+        effective: readTarget() + (readStats(params).mean - readTarget()) * uniforms.uPeak.value,
         peak: uniforms.uPeak.value,
         safeZone: { on: uniforms.uSafeOn.value > 0, left: safeLeft, right: safeRight },
+        zones: seq.flatMap((it, i) => (it.kind === 'break' ? [[effTops[i], effTops[i] + effHeights[i]] as [number, number]] : [])),
+        dampEquivVh: seq.flatMap((it, i) =>
+          it.kind === 'break'
+            ? [dampEquivalentVh((effHeights[i] / (document.documentElement.clientHeight || window.innerHeight)) * 100, params)]
+            : [],
+        ),
+        damp: damper.debug(),
       }
     },
     destroy,

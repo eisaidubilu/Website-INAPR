@@ -24,14 +24,16 @@
   --titik-2: #250001;
   --titik-3: #fcba04;
   /*
-   * Warna titik saat MEMBACA (di shader dicampur ke --titik-* menuju puncak jeda). Tidak
-   * boleh sama/dekat dengan --ink. Kontras teks isi di atas satu titik beropasitas
-   * readIntensity dicek: `node scripts/check-reading-contrast.mjs`. Rose (dari --accent)
-   * dan tint netral sudah dicampur ke arah latar supaya --muted tetap >= 4,5:1.
+   * Warna titik saat MEMBACA (di shader dicampur ke --titik-* menuju puncak jeda). Warna JENUH
+   * (tidak dipucatkan): redam dilakukan lewat opasitas, bukan warna. Tidak boleh sama/dekat
+   * dengan --ink (#250001) maupun latar. Urutan = sebaran titik: -1 ≈ 57%, -3 ≈ 29%, -2 ≈ 14%.
+   * Diperiksa: `node scripts/check-reading-contrast.mjs`.
+   * Terang: accent, emas, jingga hangat di antaranya (jingga lebih gelap dari emas supaya
+   * kontras luminansi terhadap latar krem cukup; emas sendiri hanya ±1,2:1 terhadap latar).
    */
-  --titik-baca-1: #d7a6a3;
+  --titik-baca-1: #a50104;
   --titik-baca-2: #fcba04;
-  --titik-baca-3: #c0ada7;
+  --titik-baca-3: #c86e00;
 
   /*
    * Tinggi navbar/banner sticky. Nilai awal = hasil ukur per breakpoint (satu baris
@@ -67,9 +69,10 @@
   --titik-1: #fcba04;
   --titik-2: #f3f3f3;
   --titik-3: #a50104;
-  --titik-baca-1: #ac7204;
-  --titik-baca-2: #957a7b;
-  --titik-baca-3: #a50104;
+  /* Gelap: emas, krem hangat (bukan putih, supaya tidak menyatu dengan teks), merah accent terang. */
+  --titik-baca-1: #fcba04;
+  --titik-baca-2: #d8be94;
+  --titik-baca-3: #d83a3d;
 
   color-scheme: dark;
 }

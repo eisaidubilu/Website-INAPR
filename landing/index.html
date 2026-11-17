@@ -68,6 +68,23 @@
       })()
     </script>
 
+    <!--
+      Refresh selalu mulai dari atas: browser tidak memulihkan posisi scroll, dan saat RELOAD hash
+      (#section sisa klik menu) dibuang supaya browser tidak melompat ke anchor. Tautan #section
+      yang dibuka pertama kali (bukan reload) tetap melompat ke section-nya.
+    -->
+    <script>
+      ;(function () {
+        try {
+          if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+          var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0]
+          if (nav && nav.type === 'reload' && location.hash) {
+            history.replaceState(history.state, '', location.pathname + location.search)
+          }
+        } catch (e) {}
+      })()
+    </script>
+
     <!-- Tanpa JavaScript: sembunyikan kontrol yang butuh JS, tampilkan menu di mobile. -->
     <noscript>
       <style>

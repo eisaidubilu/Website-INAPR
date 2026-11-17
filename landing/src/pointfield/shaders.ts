@@ -24,11 +24,13 @@
  *   opasitas= uOpacity × mix(1, redup, dn) × kecerahan acak × fade dekat bidang near
  *   Titik bentuk (w → 1) mengabaikan pelemahan jarak supaya bentuk terbaca solid.
  *
- * Keterbacaan teks: I = mix(uReadI, 1, uPeak) dengan uPeak = smoothstep(intensitas jeda m).
- *   Saat membaca (uPeak = 0) opasitas × uReadI, ukuran × uReadSize dan dibatasi uReadMax,
- *   warna = warna baca, dorong/riak pointer × I, dan titik di dalam kolom konten (uSafeX,
- *   desktop saja) diredam × uSafeFactor dengan tepi smoothstep. Di puncak jeda (uPeak = 1)
- *   semuanya kembali ke nilai penuh, jadi bentuk tidak berubah dari sebelumnya.
+ * Keterbacaan teks: uPeak = smoothstep(intensitas jeda m).
+ *   Saat membaca (uPeak = 0): opasitas × uReadGain (= opasitas efektif target / rata-rata
+ *   opasitas puncak titik, jadi nilai di config ≈ hasil yang terlihat), dorong/riak pointer
+ *   × uReadI, ukuran × uReadSize dan dibatasi uReadMax, warna = warna baca, dan titik di
+ *   kolom konten (uSafeX, desktop saja) × uSafeFactor (relatif terhadap area tanpa teks)
+ *   dengan tepi smoothstep. Di puncak jeda (uPeak = 1) semuanya kembali ke nilai penuh, jadi
+ *   bentuk tidak berubah dari sebelumnya.
  *
  * Streak: kecepatan layar tiap titik = selisih proyeksi dengan matriks view-proyeksi frame
  * sebelumnya (uPrevViewProj). Sprite memanjang searah kecepatan itu (aliran radial saat
@@ -86,6 +88,7 @@ uniform vec3 uReadColor2;
 uniform vec3 uReadColor3;
 uniform float uPeak;
 uniform float uReadI;
+uniform float uReadGain;
 uniform float uReadSize;
 uniform float uReadMax;
 uniform vec2 uSafeX;
@@ -107,8 +110,10 @@ varying vec2 vDir;
 varying float vStretch;
 
 void main() {
-  // Intensitas keterbacaan: uReadI saat membaca, 1 di puncak jeda.
+  // Keterbacaan: skala dorong pointer (uReadI saat membaca, 1 di puncak) dan gain opasitas
+  // (uReadGain saat membaca, 1 di puncak; gain sudah menormalkan kedalaman dan kecerahan).
   float readI = mix(uReadI, 1.0, uPeak);
+  float readGain = mix(uReadGain, 1.0, uPeak);
   float rn = clamp(length(position) / uFieldRadius, 0.0, 1.0);
   float speed = uRevSpeed * (1.0 + uRevCore * (1.0 - rn)) * (1.0 + uRevVar * aSpin);
   float a = uTime * speed;
@@ -175,7 +180,7 @@ void main() {
   float sizeCap = mix(uReadMax, uSizeMax, uPeak);
   float size = min(uSize * (uScale / depth) * sizeDepth * sizeVar * mix(uReadSize, 1.0, uPeak), sizeCap);
 
-  float alpha = uOpacity * readI * mix(1.0, 1.0 - 0.75 * uDepthOpacity, dn);
+  float alpha = uOpacity * readGain * mix(1.0, 1.0 - 0.75 * uDepthOpacity, dn);
   alpha *= 1.0 - uBrightVar * fract(aSeed * 91.7);
   alpha *= smoothstep(0.15, max(uNearFade, 0.2), depth);
   alpha /= 1.0 + 0.35 * (stretch - 1.0);

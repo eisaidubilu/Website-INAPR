@@ -167,7 +167,7 @@ html.pf-grabbing * {
   html.theme-transition *,
   html.theme-transition *::before,
   html.theme-transition *::after {
-    transition-property: background-color, border-color, color, fill, stroke, outline-color !important;
+    transition-property: background-color, border-color, color, fill, stroke, outline-color, text-shadow !important;
     transition-duration: 200ms !important;
     transition-timing-function: ease-out !important;
     transition-delay: 0ms !important;
@@ -193,9 +193,89 @@ html.pf-grabbing * {
 }
 
 @layer base {
+  /*
+   * Tinggi jeda untuk area snap section (scroll-margin-bottom di bawah). HARUS sama dengan
+   * BREAK_HEIGHT di src/config/pointfield.ts (Break.tsx memasang nilai itu per jeda).
+   */
+  :root {
+    --break-h-desktop: 180vh;
+    --break-h-mobile: 140svh;
+  }
+
   html {
     scroll-padding-top: calc(var(--nav-h) + 1rem);
     -webkit-text-size-adjust: 100%;
+    /*
+     * Scroll-snap: PROXIMITY. Mandatory diuji dan ditolak: (a) dengan area snap bawaan section
+     * pendek (< viewport) memaksa loncat ke section lain (PageDown +248vh, roda pelan terkunci,
+     * drag scrollbar ditarik 645px); (b) dengan area diperluas (di bawah) tidak lagi loncat, tetapi
+     * punya zona mati sepanjang ±1 viewport sebelum tiap section yang menarik halaman sampai ±0,5
+     * viewport saat berhenti, dan tidak membuat flick roda berhenti lebih baik. Proximity hanya
+     * menarik bila berhenti dekat awal section. Tanpa JS; skalar scroll T engine dibaca dari
+     * scrollY. Tetap aktif saat reduced motion (tanpa animasi: scroll-behavior hanya smooth bila
+     * no-preference). Saklar uji: panel ?tune.
+     */
+    scroll-snap-type: y proximity;
+  }
+
+  /*
+   * Snap area = section + jeda di bawahnya, rata atas (start) di bawah navbar sticky
+   * (scroll-padding-top). Tanpa ini section lebih pendek dari viewport adalah titik snap
+   * sempit: tiap notch roda 100px dari awalnya berakhir dalam jarak proximity dan ditarik
+   * balik, jadi roda pelan TERJEBAK di awal section pendek (terukur: 0 → 0px; 21 notch tanpa
+   * kemajuan). Snap area yang lebih besar dari snapport dianggap bebas digulir: posisi mana pun
+   * yang menutupi snapport adalah posisi snap yang sah, jadi section dan jeda di bawahnya tidak
+   * menarik balik. Ini BUKAN titik snap di jeda: jeda tidak punya titik sendiri, hanya tercakup
+   * area section di atasnya, dan animasi scrub berjalan penuh. Section terakhir tanpa jeda.
+   * scroll-snap-stop: always = scroll berarah (keyboard, scroll programatik) tidak melewati batas
+   * awal area dalam satu gerakan. Catatan terukur: scroll-snap-stop TIDAK menghentikan flick
+   * roda/trackpad di Chrome (hasil sama dengan tanpa snap), itu bukan wewenang CSS.
+   */
+  [data-section] {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  section[data-section]:not(:last-of-type) {
+    scroll-margin-bottom: var(--break-h-mobile);
+  }
+  @media (min-width: 768px) {
+    section[data-section]:not(:last-of-type) {
+      scroll-margin-bottom: var(--break-h-desktop);
+    }
+  }
+  /* Section pertama: titik snap di scrollY = 0, supaya banner draf tetap bisa terlihat penuh. */
+  [data-section='0'] {
+    scroll-margin-top: calc(var(--banner-h) - 1rem);
+  }
+  /*
+   * Jeda (Break): SENGAJA tanpa titik snap sendiri dan tanpa gerbang/penarik di engine. Titik snap
+   * tengah-jeda menjebak scroll roda di pusat jeda (notch yang berakhir dalam ±0,3 viewport dari
+   * titik snap ditarik balik). Animasi jeda hanya menempel ke scroll (engine); engine tidak pernah
+   * menarik posisi scroll. Peredam roda (src/pointfield/wheeldamp.ts) hanya di zona animasi jeda.
+   */
+
+  /*
+   * Halo teks tipis: bayangan sangat lembut berwarna latar di sekitar paragraf dan judul,
+   * supaya titik di belakang teks sedikit mereda. Hanya blur (tanpa offset), jadi tidak
+   * mengubah tata letak dan tidak tampak sebagai garis tepi. Latar nyata di <main> adalah
+   * --mat (bukan --bg); di dalam kartu opak, --halo diganti warna kartunya.
+   */
+  main {
+    --halo: var(--mat);
+  }
+  main .bg-surface {
+    --halo: var(--surface);
+  }
+  main .bg-soft {
+    --halo: var(--soft);
+  }
+  main .bg-bg {
+    --halo: var(--bg);
+  }
+  main :is(p, h1, h2, h3, h4, li, dd, blockquote) {
+    text-shadow:
+      0 0 0.35em color-mix(in srgb, var(--halo) 55%, transparent),
+      0 0 0.9em color-mix(in srgb, var(--halo) 35%, transparent);
   }
 
   @media (prefers-reduced-motion: no-preference) {
