@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { generateMemberId } from './members'
+import { generateDynamicMemberId } from './id_generator'
 
 // 1. Fungsi untuk mengajukan pendaftaran anggota baru (Sisi Publik / Calon Anggota)
 export async function submitRegistration(formData: {
@@ -9,19 +9,17 @@ export async function submitRegistration(formData: {
   tahun_daftar: number
   bukti_bayar?: string
 }) {
-  // Langkah A: Masukkan data ke tabel members terlebih dahulu (status awal Pending atau Non-Active sampai diverifikasi)
-  const generatedId = await generateMemberId(formData.tahun_daftar)
-
+  // Langkah A: Masukkan data ke tabel members (member_id masih null karena belum disetujui)
   const { data: memberData, error: memberError } = await supabase
     .from('members')
     .insert([
       {
-        member_id: generatedId,
+        member_id: null,
         nama: formData.nama,
         email: formData.email,
         institusi: formData.institusi,
         tahun_daftar: formData.tahun_daftar,
-        status: 'Pending', // Menunggu verifikasi pengurus
+        status: 'Pending',
         tampil_di_publik: false
       }
     ])
@@ -33,7 +31,7 @@ export async function submitRegistration(formData: {
     return { success: false, error: memberError.message }
   }
 
-  // Langkah B: Catat ke tabel registrations (hubungkan dengan anggota_id)
+  // Langkah B: Catat ke tabel registrations
   const { data: regData, error: regError } = await supabase
     .from('registrations')
     .insert([
@@ -50,7 +48,7 @@ export async function submitRegistration(formData: {
     return { success: false, error: regError.message }
   }
 
-  return { success: true, memberId: generatedId, data: regData }
+  return { success: true, data: regData }
 }
 
 // 2. Fungsi untuk proses verifikasi oleh pengurus/admin (Sisi Admin - BR-08)
@@ -60,10 +58,10 @@ export async function verifyRegistration(
   action: 'Approved' | 'Rejected',
   alasanPenolakan?: string
 ) {
-  // A. Ambil data registrasi untuk tahu ID anggotanya
+  // A. Ambil data registrasi beserta tahun_daftar dari tabel members
   const { data: reg, error: fetchError } = await supabase
     .from('registrations')
-    .select('anggota_id')
+    .select('anggota_id, members(tahun_daftar)')
     .eq('id', registrationId)
     .single()
 
@@ -85,11 +83,16 @@ export async function verifyRegistration(
     return { success: false, error: updateRegError.message }
   }
 
-  // C. Jika Approved, aktifkan status member di tabel members dan izinkan tampil di publik
+  // C. Jika Approved, generate Member ID resmi lalu aktifkan status member
   if (action === 'Approved') {
+    const memberRelation = Array.isArray(reg.members) ? reg.members[0] : reg.members
+    const tahunDaftar = memberRelation?.tahun_daftar || new Date().getFullYear()
+    const officialMemberId = await generateDynamicMemberId(tahunDaftar)
+
     const { error: updateMemberError } = await supabase
       .from('members')
       .update({
+        member_id: officialMemberId,
         status: 'Active',
         tampil_di_publik: true
       })
@@ -98,7 +101,13 @@ export async function verifyRegistration(
     if (updateMemberError) {
       return { success: false, error: updateMemberError.message }
     }
+
+    return {
+      success: true,
+      memberId: officialMemberId,
+      message: `Pendaftaran disetujui dengan Member ID ${officialMemberId}`
+    }
   }
 
-  return { success: true, message: `Pendaftaran berhasil di-${action.toLowerCase()}` }
+  return { success: true, message: 'Pendaftaran berhasil ditolak' }
 }

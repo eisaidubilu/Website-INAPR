@@ -1,31 +1,14 @@
 import { supabase } from './supabase'
+import { generateDynamicMemberId } from './id_generator'
 
-// 1. Fungsi untuk membuat/generate ID anggota otomatis dengan template
-export async function generateMemberId(tahunDaftar: number): Promise<string> {
-  const { count, error } = await supabase
-    .from('members')
-    .select('*', { count: 'exact', head: true })
-    .eq('tahun_daftar', tahunDaftar)
-
-  if (error) {
-    console.error('Gagal menghitung total member untuk ID:', error.message)
-    return `INAPR-${tahunDaftar}-001`
-  }
-
-  const nextNumber = (count || 0) + 1
-  const paddedNumber = String(nextNumber).padStart(3, '0')
-
-  return `INAPR-${tahunDaftar}-${paddedNumber}`
-}
-
-// 2. Fungsi untuk mendaftarkan member baru dengan ID otomatis
+// 1. Fungsi untuk mendaftarkan member baru langsung oleh admin (menggunakan generator dinamis)
 export async function registerNewMember(formData: {
   nama: string
   email: string
   institusi: string
   tahun_daftar: number
 }) {
-  const generatedId = await generateMemberId(formData.tahun_daftar)
+  const generatedId = await generateDynamicMemberId(formData.tahun_daftar)
 
   const { data, error } = await supabase
     .from('members')
@@ -50,7 +33,7 @@ export async function registerNewMember(formData: {
   return { success: true, data }
 }
 
-// 3. Fungsi untuk mengambil daftar anggota publik (Member List dinamis dengan pencarian nama/institusi)
+// 2. Fungsi untuk mengambil daftar anggota publik (Member List dinamis dengan pencarian nama/institusi)
 export async function getPublicMemberList(searchQuery?: string) {
   let query = supabase
     .from('members')
@@ -59,7 +42,6 @@ export async function getPublicMemberList(searchQuery?: string) {
     .eq('tampil_di_publik', true)
     .order('nama', { ascending: true })
 
-  // Jika ada kata kunci pencarian dari user
   if (searchQuery) {
     query = query.or(`nama.ilike.%${searchQuery}%,institusi.ilike.%${searchQuery}%`)
   }
