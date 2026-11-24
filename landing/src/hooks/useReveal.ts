@@ -46,9 +46,13 @@ export function useReveal(): void {
       { rootMargin: '0px 0px -10% 0px' },
     )
 
+    // Dua lintasan: SEMUA pembacaan layout dulu, baru penulisan atribut. Menyelang baca/tulis per elemen
+    // memaksa hitung ulang style di tiap iterasi (layout thrashing) tepat saat startup.
     const fold = window.innerHeight
-    for (const el of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
-      if (el.getBoundingClientRect().top < fold) continue
+    const belowFold = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]')).filter(
+      (el) => el.getBoundingClientRect().top >= fold,
+    )
+    for (const el of belowFold) {
       el.setAttribute('data-reveal-pending', '')
       pending.add(el)
       observer.observe(el)

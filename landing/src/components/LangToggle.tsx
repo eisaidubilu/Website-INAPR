@@ -1,5 +1,5 @@
 import { flushSync } from 'react-dom'
-import { useI18n } from '@/i18n/useI18n'
+import { ensureLang, useI18n } from '@/i18n/useI18n'
 import type { Lang } from '@/i18n/types'
 import { prefersReducedMotion } from '@/lib/motion'
 import { SegmentedToggle } from './SegmentedToggle'
@@ -14,7 +14,10 @@ export function LangToggle() {
 
   // Crossfade ringan (View Transitions API, ±200ms di global.css). Tanpa dukungan
   // browser atau saat reduced motion: langsung ganti, tanpa animasi.
-  const change = (next: Lang) => {
+  // Kamus Inggris dimuat malas: tunggu siap DULU, baru ganti (teks lama tetap tampil sampai itu,
+  // jadi tidak ada kedip). Gagal muat → bahasa tidak berubah.
+  const change = async (next: Lang) => {
+    if (!(await ensureLang(next))) return
     if (typeof document.startViewTransition !== 'function' || prefersReducedMotion()) {
       setLang(next)
       return

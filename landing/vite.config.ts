@@ -19,7 +19,17 @@ export default defineConfig(({ mode, isSsrBuild }) => {
 
   return {
     base: parseBase(env.VITE_BASE),
+    // Sama untuk build klien dan SSR (prerender) dalam satu `npm run build`; dipakai Footer supaya hidrasi cocok.
+    define: { __BUILD_YEAR__: JSON.stringify(new Date().getFullYear()) },
     plugins: [react(), tailwindcss(), seo(env.VITE_SITE_URL)],
+    // Proxy dev HANYA untuk mode (a) (VITE_API_BASE terisi): /api → backend lokal. Tidak mempengaruhi build.
+    server: env.VITE_API_BASE?.trim()
+      ? {
+          proxy: {
+            '/api': { target: env.VITE_API_PROXY?.trim() || 'http://localhost:3000', changeOrigin: true },
+          },
+        }
+      : undefined,
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -18,7 +18,11 @@ function parseBase(value: string | undefined): URL | null {
 
 const BASE = parseBase(import.meta.env.VITE_SLIDES_BASE_URL)
 
-/** URL lengkap slide, atau null bila alamat dasar belum diisi. */
+/**
+ * URL lengkap slide, atau null bila alamat dasar belum diisi.
+ * Data dari backend/Supabase membawa URL penuh (sudah divalidasi http(s) di data/api.ts): dipakai apa adanya.
+ */
 export function slideUrl(file: string): string | null {
+  if (/^https?:\/\//i.test(file)) return file
   return BASE ? new URL(encodeURIComponent(file), BASE).href : null
 }

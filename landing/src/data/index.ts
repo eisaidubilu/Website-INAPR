@@ -5,6 +5,8 @@
 
 export interface Member {
   name: string
+  /** Hanya dari sumber jauh (api.ts); data lokal tidak memuatnya. Belum ditampilkan di UI. */
+  institution?: string
 }
 
 export interface MembersData {
@@ -38,7 +40,10 @@ export interface WebinarsData {
   items: Webinar[]
 }
 
-/** Data di-import dinamis (chunk terpisah) supaya tidak masuk bundel awal. */
+/**
+ * Data LOKAL, di-import dinamis (chunk terpisah) supaya tidak masuk bundel awal.
+ * Komponen memakai getMembers()/getArchives() dari ./api, yang jatuh ke sini bila sumber jauh tidak tersedia.
+ */
 export const loadMembers = (): Promise<MembersData> =>
   import('./members.json').then((module) => module.default as MembersData)
 

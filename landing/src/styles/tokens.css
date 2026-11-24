@@ -94,7 +94,7 @@
   --color-titik-2: var(--titik-2);
   --color-titik-3: var(--titik-3);
 
-  --font-heading: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
-  --font-sub: 'Lato', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Hind Siliguri', 'Segoe UI', system-ui, sans-serif;
+  --font-heading: 'Montserrat', 'Montserrat Fallback', 'Segoe UI', system-ui, sans-serif;
+  --font-sub: 'Lato', 'Lato Fallback', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Hind Siliguri', 'Hind Siliguri Fallback', 'Segoe UI', system-ui, sans-serif;
 }

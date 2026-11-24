@@ -138,6 +138,23 @@ build ulang, jadi setiap perubahan butuh redeploy.
 Nilai `VITE_SITE_URL` yang tidak valid (mis. tanpa `https://`) membuat build gagal dengan
 pesan jelas; perbaiki nilainya lalu redeploy.
 
+### Disematkan di subfolder (mis. `https://inapr.org/landing/`)
+
+Bila landing dihosting di subfolder domain (bukan root), dua variabel harus selaras:
+
+| Key | Value |
+|---|---|
+| `VITE_BASE` (atau `vite build --base=/landing/`) | `/landing/` |
+| `VITE_SITE_URL` | **path penuh**: `https://inapr.org/landing/` |
+
+`VITE_SITE_URL` memberi URL kanonik, `og:url`, `og:image`, `url` JSON-LD, dan `sitemap.xml`. Tanpa path
+di dalamnya, semua itu menunjuk ke root domain (`https://inapr.org/`) yang salah. Sebagai pengaman,
+`config/seo-plugin.ts` menggabungkan base build bila `VITE_SITE_URL` **tidak** memuat path:
+`VITE_SITE_URL=https://inapr.org` + base `/landing/` menghasilkan `https://inapr.org/landing/`.
+Bila `VITE_SITE_URL` sudah memuat path, nilainya dipakai apa adanya (tidak digabung dua kali).
+Tetap isi dengan path penuh agar niatnya eksplisit. `public/404.html` memakai alamat absolut khusus
+Vercel (`/favicon.svg`, `/`), jadi tidak untuk subfolder.
+
 ---
 
 ## E. Mencabut `noindex` saat situs final

@@ -1,6 +1,6 @@
-import { useActiveSection } from '@/hooks/useActiveSection'
+import { useActiveSection } from '@/hooks/useScrollState'
 import { useI18n } from '@/i18n/useI18n'
-import { NAV_IDS, SECTION_IDS } from '@/lib/sections'
+import { NAV_IDS } from '@/lib/sections'
 
 /**
  * Rel titik navigasi di tepi kanan (hanya ≥ 1280px, fixed: tidak mengubah tata letak).
@@ -11,7 +11,7 @@ import { NAV_IDS, SECTION_IDS } from '@/lib/sections'
  */
 export function SectionRail() {
   const { t } = useI18n()
-  const active = useActiveSection(SECTION_IDS)
+  const active = useActiveSection()
 
   return (
     <nav

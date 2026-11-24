@@ -88,7 +88,7 @@ import {
   type PointFieldParams,
   type ZoomDirection,
 } from '@/config/pointfield'
-import { buildPointData, SHAPE_BASE_RADIUS, type PointData } from './geometry'
+import { buildPointDataAsync, buildPointData, SHAPE_BASE_RADIUS, type PointData } from './geometry'
 import {
   computeFrame,
   createFrameState,
@@ -173,6 +173,8 @@ interface PointFieldOptions {
   /** Dipanggil bila WebGL hilang di tengah jalan (context lost) atau render gagal. */
   onFail(): void
   params?: PointFieldParams
+  /** Dicek di sela pembangunan data titik: true = batalkan (komponen sudah dilepas); createPointField → null. */
+  shouldAbort?(): boolean
 }
 
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
@@ -180,6 +182,12 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
 const SETTLE_EPSILON = 0.0005
 /** Durasi frame acuan untuk smoothing (smoothing = faktor per frame 60 fps). */
 const FRAME_MS = 1000 / 60
+/**
+ * Layar > 60 Hz (120/144 Hz): tick rAF di antara dua frame 60 fps dilewati (lihat frame()), jadi beban
+ * CPU/GPU/baterai tetap seperti 60 Hz. Gerak berbasis waktu (dt dari timestamp), jadi kecepatan tidak berubah.
+ * Toleransi: jitter timestamp di layar 60 Hz tidak boleh membuat satu frame pun terlewat.
+ */
+const FRAME_SLACK_MS = 1
 /** Batas dt per frame: setelah tab kembali / jank, waktu dan T tidak melonjak. */
 const MAX_DT_MS = 50
 /**
@@ -192,6 +200,12 @@ const JUMP_ELEMENTS = 1.5
 const SCROLL_IDLE_MS = 150
 /** Batas aman mode navigasi (bila scroll tidak pernah dimulai/selesai). */
 const NAV_MAX_MS = 2500
+/**
+ * Setelah webglcontextlost: menunggu webglcontextrestored selama ini. Lewat dari itu (restore tidak datang,
+ * mis. GPU/driver bermasalah) pemulihan dianggap gagal: engine dihentikan dan onFail() dipanggil (halaman tetap
+ * utuh dengan latar cutting mat), sama seperti perilaku lama.
+ */
+const RESTORE_TIMEOUT_MS = 5000
 /** Durasi transisi warna titik saat tema berganti. */
 const COLOR_FADE_MS = 200
 /** Intensitas di bawah ini dianggap lepas (boleh ganti bentuk): morph ≈ 0, tak terlihat. */
@@ -242,9 +256,36 @@ function zoomY(direction: ZoomDirection): number {
   return direction.startsWith('top') ? 1 : direction.startsWith('bottom') ? -1 : 0
 }
 
-/** Mengembalikan null bila WebGL tidak tersedia atau renderer gagal dibuat. */
-export function createPointField(host: HTMLElement, options: PointFieldOptions): PointFieldEngine | null {
+/** Beri giliran ke thread utama (input, render) di antara irisan kerja: scheduler.yield, atau macrotask MessageChannel. */
+function yieldToMain(): Promise<void> {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler
+  if (typeof scheduler?.yield === 'function') return scheduler.yield()
+  return new Promise((resolve) => {
+    const channel = new MessageChannel()
+    channel.port1.onmessage = () => {
+      channel.port1.close()
+      resolve()
+    }
+    channel.port2.postMessage(0)
+  })
+}
+
+/**
+ * Mengembalikan null bila WebGL tidak tersedia, renderer gagal dibuat, atau dibatalkan (shouldAbort).
+ * Async: data titik (7.500/11.000/20.000 titik × 7 bentuk) dibangun BERTAHAP di sela tugas lain, sebelum
+ * canvas/renderer disentuh, jadi tidak ada tugas panjang dan pembatalan tidak meninggalkan sisa.
+ * Data sama persis dengan pembangunan sekali jalan (PRNG seeded, urutan sama).
+ */
+export async function createPointField(host: HTMLElement, options: PointFieldOptions): Promise<PointFieldEngine | null> {
   if (!supportsWebGL()) return null
+
+  let params: PointFieldParams = options.params ?? POINTFIELD_DEFAULTS
+  const { device, pixelRatioCap } = pickDevice()
+  const prebuilt = await buildPointDataAsync(countFor(device, params), params, {
+    yieldToMain,
+    shouldAbort: options.shouldAbort,
+  })
+  if (!prebuilt) return null
 
   const canvas = document.createElement('canvas')
   canvas.setAttribute('aria-hidden', 'true')
@@ -253,15 +294,20 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
 
   let renderer: WebGLRenderer
   try {
-    renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true })
+    // Tanpa MSAA dan tanpa buffer depth: titik digambar depthWrite:false dan tepinya sudah dilembutkan
+    // di fragment shader (smoothstep), jadi keduanya hanya membuang GPU/memori (docs/AUDIT.md F02).
+    renderer = new WebGLRenderer({
+      canvas,
+      antialias: false,
+      depth: false,
+      alpha: true,
+      powerPreference: 'low-power',
+    })
   } catch {
     canvas.remove()
     return null
   }
   renderer.setClearColor(0x000000, 0)
-
-  let params: PointFieldParams = options.params ?? POINTFIELD_DEFAULTS
-  const { device, pixelRatioCap } = pickDevice()
 
   // ---- Data titik ----
   let count = 0
@@ -273,14 +319,21 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   let currentShape = -1
 
   let geometryVersion = 0
-  function buildGeometry(): BufferGeometry {
+  function buildGeometry(prebuiltData?: PointData): BufferGeometry {
     geometryVersion++
     count = countFor(device, params)
-    data = buildPointData(count, params)
-    const next = new BufferGeometry()
-    next.setAttribute('position', new BufferAttribute(data.field, 3))
+    data = prebuiltData ?? buildPointData(count, params)
     const shape = Math.max(0, currentShape)
     targetArray = new Float32Array(data.shapes[shape])
+    return geometryFromData()
+  }
+  /**
+   * BufferGeometry baru dari data titik yang ada (data + targetArray = bentuk yang sedang termuat). Dipakai
+   * saat membangun geometri dan saat memulihkan konteks WebGL (data CPU utuh, hanya objek GPU yang dibuat ulang).
+   */
+  function geometryFromData(): BufferGeometry {
+    const next = new BufferGeometry()
+    next.setAttribute('position', new BufferAttribute(data.field, 3))
     targetAttribute = new BufferAttribute(targetArray, 3)
     targetAttribute.setUsage(DynamicDrawUsage)
     next.setAttribute('aTarget', targetAttribute)
@@ -292,7 +345,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     next.setAttribute('aSeed', new BufferAttribute(data.seed, 1))
     return next
   }
-  geometry = buildGeometry()
+  geometry = buildGeometry(prebuilt)
 
   // 0..2 = warna penuh (COLOR_TOKENS), 3..5 = warna baca (READ_COLOR_TOKENS).
   const ALL_COLOR_TOKENS = [...COLOR_TOKENS, ...READ_COLOR_TOKENS] as const
@@ -359,18 +412,38 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     uSafeFactor: { value: params.safeZoneFactor },
     uSafeFeather: { value: 0.1 },
   }
-  const material = new ShaderMaterial({
-    uniforms,
-    vertexShader,
-    fragmentShader,
-    transparent: true,
-    depthWrite: false,
-  })
+  // uniforms dipakai bersama oleh semua material yang dibuat (nilainya hidup di objek ini, bukan di GPU).
+  const makeMaterial = () =>
+    new ShaderMaterial({
+      uniforms,
+      vertexShader,
+      fragmentShader,
+      transparent: true,
+      depthWrite: false,
+    })
+  let material = makeMaterial()
   const points = new Points(geometry, material)
   points.frustumCulled = false
   const scene = new Scene()
   scene.add(points)
   const camera = new PerspectiveCamera(FOV.wide, 1, 0.1, 120)
+
+  // Kompilasi + link shader TANPA memblokir thread utama (KHR_parallel_shader_compile bila ada; selain itu
+  // three.js jatuh ke kompilasi biasa). Tanpa ini kompilasi terjadi sinkron di frame pertama (tugas panjang).
+  // Setelah await, pembuat yang sudah dibatalkan (komponen dilepas) tidak meninggalkan renderer/canvas.
+  try {
+    await renderer.compileAsync(scene, camera)
+  } catch {
+    // Gagal di sini bukan masalah: frame pertama mengompilasi seperti biasa (dan gagal ke onFail bila memang rusak).
+  }
+  if (options.shouldAbort?.()) {
+    geometry.dispose()
+    material.dispose()
+    renderer.dispose()
+    renderer.forceContextLoss()
+    canvas.remove()
+    return null
+  }
 
   // Objek kerja (dipakai ulang, tanpa alokasi per frame).
   const worldUp = new Vector3(0, 1, 0)
@@ -440,6 +513,8 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   let matOffset = Number.NaN
   /** Waktu frame sebelumnya; 0 = loop baru mulai (dt acuan dipakai). */
   let lastTime = 0
+  /** Waktu (timestamp rAF) paling awal frame berikutnya boleh dirender; lihat batas 60 fps di frame(). */
+  let nextFrameAt = 0
   /** Waktu event scroll terakhir (untuk menyelesaikan bentuk setengah jadi saat diam). */
   let lastScrollAt = 0
   /** Navigasi anchor jauh: T ditahan di elemen tujuan sampai scroll native selesai. */
@@ -897,7 +972,14 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   /** Error saat render (di luar React, jadi tak tertangkap error boundary) → berhenti, fallback. */
   function frame(now: number): void {
     raf = 0
-    if (destroyed) return
+    if (destroyed || contextLost) return
+    // Batas 60 fps: belum waktunya → tunggu tick berikutnya (tanpa menyentuh lastTime, jadi dt tetap
+    // selisih waktu nyata antar frame yang dirender). Terlambat lebih dari satu frame → mulai ulang jadwal.
+    if (now + FRAME_SLACK_MS < nextFrameAt) {
+      schedule()
+      return
+    }
+    nextFrameAt = now - nextFrameAt > FRAME_MS ? now + FRAME_MS : nextFrameAt + FRAME_MS
     try {
       renderFrame(now)
     } catch {
@@ -1028,7 +1110,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   }
 
   function schedule(): void {
-    if (!raf && !destroyed && !document.hidden) raf = window.requestAnimationFrame(frame)
+    if (!raf && !destroyed && !contextLost && !document.hidden) raf = window.requestAnimationFrame(frame)
   }
 
   // ---- Navigasi anchor jauh (klik menu navbar, footer, dst.) ----
@@ -1134,10 +1216,59 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     applyMotionMode()
     schedule()
   }
-  const onContextLost = () => {
+  let restoreTimer = 0
+  /**
+   * Konteks WebGL hilang (HP: app di-background, memori tipis, GPU reset). preventDefault WAJIB: tanpa itu browser
+   * tidak akan pernah memulihkannya. Loop dihentikan dengan rapi; resource tetap dipegang menunggu
+   * webglcontextrestored. Bila tidak datang dalam RESTORE_TIMEOUT_MS: berhenti dan onFail (fallback seperti dulu).
+   */
+  const onContextLost = (event: Event) => {
+    event.preventDefault()
+    if (destroyed || contextLost) return
     contextLost = true
-    destroy()
-    options.onFail()
+    window.cancelAnimationFrame(raf)
+    raf = 0
+    lastTime = 0
+    window.clearTimeout(restoreTimer)
+    restoreTimer = window.setTimeout(() => {
+      if (destroyed || !contextLost) return
+      destroy()
+      options.onFail()
+    }, RESTORE_TIMEOUT_MS)
+  }
+  /**
+   * Konteks kembali. Semua objek GPU dibuat ulang dari data CPU yang utuh: renderer (three.js menginisialisasi
+   * ulang dirinya saat event yang sama), geometri, dan material; uniform dan T/posisi scroll tidak berubah, jadi
+   * animasi lanjut dari keadaan sekarang tanpa reload dan tanpa kedip (canvas tidak dilepas dari DOM).
+   */
+  const onContextRestored = () => {
+    if (destroyed || !contextLost) return
+    window.clearTimeout(restoreTimer)
+    try {
+      renderer.setClearColor(0x000000, 0)
+      const oldGeometry = geometry
+      const oldMaterial = material
+      geometry = geometryFromData()
+      material = makeMaterial()
+      points.geometry = geometry
+      points.material = material
+      // Objek lama milik konteks yang hilang: dispose melepas listener-nya dari geometri/material.
+      oldGeometry.dispose()
+      oldMaterial.dispose()
+      contextLost = false
+      // Paksa ukur/atur ulang ukuran canvas dan frame penuh (tanpa streak dari frame sebelum hilang).
+      width = 0
+      height = 0
+      resetPrev = true
+      anchorDirty = true
+      dirty = true
+      lastTime = 0
+      nextFrameAt = 0
+      schedule()
+    } catch {
+      destroy()
+      options.onFail()
+    }
   }
   // Pointer: semua pasif, hanya mencatat posisi (frame membaca sekali per rAF).
   const onPointerMove = (event: PointerEvent) => {
@@ -1231,6 +1362,7 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
   document.addEventListener('visibilitychange', onVisibility)
   motionQuery.addEventListener('change', onMotionChange)
   canvas.addEventListener('webglcontextlost', onContextLost)
+  canvas.addEventListener('webglcontextrestored', onContextRestored)
   window.addEventListener('pointermove', onPointerMove, passive)
   window.addEventListener('pointerdown', onPointerDown, { passive: false })
   window.addEventListener('pointerup', onPointerUp, passive)
@@ -1268,6 +1400,8 @@ export function createPointField(host: HTMLElement, options: PointFieldOptions):
     document.removeEventListener('visibilitychange', onVisibility)
     motionQuery.removeEventListener('change', onMotionChange)
     canvas.removeEventListener('webglcontextlost', onContextLost)
+    canvas.removeEventListener('webglcontextrestored', onContextRestored)
+    window.clearTimeout(restoreTimer)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerdown', onPointerDown)
     window.removeEventListener('pointerup', onPointerUp)

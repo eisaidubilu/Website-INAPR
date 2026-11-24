@@ -25,7 +25,10 @@ npm run og        # buat ulang favicon, apple-touch-icon, dan gambar OG
 4. `scripts/prerender.mjs`, yang menulis HTML hasil render ke `#root`.
 
 Karena prerender, halaman sudah terbaca sebelum JavaScript jalan, bahkan tanpa JavaScript sama
-sekali. Setelah JS dimuat, React merender ulang dengan bahasa dan tema pilihan pengguna.
+sekali. Setelah JS dimuat, React **menghidrasi** HTML itu (`hydrateRoot`, DOM dipakai ulang) bila bahasa
+tersimpan Indonesia/belum ada; bahasa tersimpan Inggris memakai `createRoot` (render ulang penuh). Tema dan
+tahun footer disesuaikan setelah hidrasi lewat `getServerSnapshot`, jadi tidak ada hydration mismatch. Bila
+komponen yang dirender saat prerender berubah, pastikan render pertama klien tetap identik (lihat `src/main.tsx`).
 
 Untuk deploy, unggah seluruh isi `dist/`. Panduan Vercel (CLI dan GitHub, domain, rollback,
 mencabut noindex): [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md).
@@ -343,7 +346,7 @@ Salin `.env.example` ke `.env.local`. Semua variabel boleh kosong.
 |---|---|
 | `VITE_SITE_URL` | URL publik, mis. `https://inapr.org`. Dipakai untuk kanonik, og:url, og:image absolut, `url` di JSON-LD, dan `sitemap.xml`. Kosong = tag-tag itu dan sitemap tidak dibuat. Nilai tidak valid = build gagal. |
 | `VITE_SLIDES_BASE_URL` | Folder slide PDF webinar, mis. `/slides/`. Kosong = tombol "Slide" disembunyikan. |
-| `VITE_BASE` | Base path bila dihosting di subfolder, mis. `/inapr/`. Kosong = `/`. Jangan diisi di Vercel. |
+| `VITE_BASE` | Base path bila dihosting di subfolder, mis. `/inapr/`. Kosong = `/`. Jangan diisi di Vercel. Di subfolder isi juga `VITE_SITE_URL` dengan path penuh (mis. `https://inapr.org/landing/`); bila hanya domain, `config/seo-plugin.ts` menggabungkan base. Lihat docs/DEPLOY-VERCEL.md bagian D. |
 
 Variabel `VITE_*` ditanam saat build: mengubahnya (juga di Vercel) butuh build ulang / redeploy.
 

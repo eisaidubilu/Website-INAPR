@@ -50,10 +50,16 @@ export function PointField() {
 
     const cancelWait = afterLoadAndIdle(() => {
       import('@/pointfield/engine')
-        .then(({ createPointField }) => {
+        .then(async ({ createPointField }) => {
           if (cancelled) return
-          // createPointField bisa melempar (mis. WebGLRenderer gagal) → ditangkap .catch.
-          engine = createPointField(host, { onFail: () => setFailed(true) })
+          // createPointField bisa melempar (mis. WebGLRenderer gagal) → ditangkap .catch. Async: data titik
+          // dibangun bertahap; bila komponen dilepas di tengah jalan, shouldAbort membatalkan tanpa sisa.
+          const created = await createPointField(host, { onFail: () => setFailed(true), shouldAbort: () => cancelled })
+          if (cancelled) {
+            created?.destroy()
+            return
+          }
+          engine = created
           engineRef.current = engine
           if (!engine) {
             setFailed(true)

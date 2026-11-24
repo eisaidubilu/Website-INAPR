@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useSyncExternalStore, type ReactNode } from 'react'
 import { useI18n } from '@/i18n/useI18n'
 import type { NavId } from '@/lib/sections'
 import { Container } from './Container'
@@ -8,10 +8,18 @@ const EXPLORE: NavId[] = ['kegiatan', 'publikasi', 'anggota', 'berita']
 const ORGANIZATION: NavId[] = ['tentang', 'gabung']
 
 const linkClass = 'text-bg/85 no-underline hover:text-bg hover:underline'
-const YEAR = new Date().getFullYear()
+/**
+ * Tahun hak cipta. Saat hidrasi (dan prerender) dipakai tahun BUILD (__BUILD_YEAR__, vite.config.ts), sama
+ * dengan HTML prerender, jadi tidak ada mismatch; setelah itu React menyamakan ke tahun sekarang.
+ * Tanpa hidrasi (createRoot) langsung tahun sekarang, seperti sebelumnya.
+ */
+const subscribeNever = () => () => {}
+const currentYear = () => new Date().getFullYear()
+const buildYear = () => __BUILD_YEAR__
 
 export function Footer() {
   const { t } = useI18n()
+  const year = useSyncExternalStore(subscribeNever, currentYear, buildYear)
 
   return (
     <footer className="relative z-10 bg-ink pt-14 pb-8 text-bg [&_:focus-visible]:outline-titik-3">
@@ -71,7 +79,7 @@ export function Footer() {
         </FooterColumn>
 
         <p className="col-span-full border-t border-bg/25 pt-5 text-[0.9rem] text-bg/75">
-          © {YEAR} INAPR · {t.footer.fine}
+          © {year} INAPR · {t.footer.fine}
         </p>
       </Container>
     </footer>

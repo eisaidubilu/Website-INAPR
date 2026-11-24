@@ -5,6 +5,59 @@
 @source not "../dev";
 
 /*
+ * Font cadangan ber-metrik (size-adjust + ascent/descent-override) untuk masa font web belum tiba
+ * (font-display: swap): lebar rata-rata dan tinggi baris disamakan dengan font aslinya, jadi teks
+ * tidak bergeser saat font asli menggantikan. Hanya dipakai selama swap; tipografi akhir tidak berubah.
+ * Nilai diukur terhadap Arial (canvas measureText, teks contoh Indonesia/Inggris). Bila font web
+ * diganti atau bobotnya berubah, ukur ulang. Tanpa Arial/Liberation Sans/Helvetica: lanjut ke 'Segoe UI'.
+ */
+@font-face {
+  font-family: 'Hind Siliguri Fallback';
+  font-weight: 100 500;
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica');
+  size-adjust: 95.63%;
+  ascent-override: 116.7%;
+  descent-override: 52.39%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Hind Siliguri Fallback';
+  font-weight: 600 900;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Helvetica Bold');
+  size-adjust: 92.7%;
+  ascent-override: 120.39%;
+  descent-override: 54.05%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Lato Fallback';
+  font-weight: 100 900;
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica');
+  size-adjust: 97.36%;
+  ascent-override: 101.38%;
+  descent-override: 21.88%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Montserrat Fallback';
+  font-weight: 100 600;
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica');
+  size-adjust: 115.16%;
+  ascent-override: 84.06%;
+  descent-override: 21.8%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Montserrat Fallback';
+  font-weight: 700 900;
+  src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'), local('Helvetica Bold');
+  size-adjust: 112.73%;
+  ascent-override: 85.87%;
+  descent-override: 22.27%;
+  line-gap-override: 0%;
+}
+
+/*
  * Latar "cutting mat": garis tipis tiap 24px, garis tebal tiap 120px.
  * Dipakai di <main>; sekaligus fallback saat WebGL tidak tersedia.
  * --mat-offset di-set engine titik untuk parallax. Didaftarkan tanpa pewarisan

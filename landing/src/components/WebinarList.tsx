@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { loadWebinars, type Webinar } from '@/data'
+import type { Webinar } from '@/data'
+import { getArchives } from '@/data/api'
 import { useLazyData } from '@/hooks/useLazyData'
 import { useI18n } from '@/i18n/useI18n'
 import { fold, matchesAll, queryTerms } from '@/lib/search'
@@ -28,7 +29,9 @@ export function WebinarList() {
   const { t } = useI18n()
   const c = t.kegiatan.webinar
   const locale = t.common.locale
-  const state = useLazyData(loadWebinars)
+  const rootRef = useRef<HTMLDivElement>(null)
+  // Data dimuat saat daftar mendekati layar, bukan saat halaman dibuka.
+  const state = useLazyData(getArchives, rootRef)
   const [query, setQuery] = useState('')
   const [year, setYear] = useState(ALL)
   const [limit, setLimit] = useState(STEP)
@@ -79,7 +82,7 @@ export function WebinarList() {
     : ''
 
   return (
-    <div data-reveal className="mt-16">
+    <div ref={rootRef} data-reveal className="mt-16">
       <h3 className="text-[clamp(1.3rem,2.2vw,1.6rem)] font-light tracking-[-0.01em]">{c.title}</h3>
       {range && <p className={cx(meta, 'mt-1')}>{c.summary(entries.length, range)}</p>}
 
@@ -148,7 +151,7 @@ export function WebinarList() {
                     <div className="grid min-w-0 content-start gap-1.5">
                       <h4 className="text-[1.05rem] leading-snug font-medium break-words">{item.title}</h4>
                       <p className={meta}>
-                        <time dateTime={item.date}>{formats.full.format(date)}</time> · {item.time}
+                        <time dateTime={item.date}>{formats.full.format(date)}</time>{item.time && ` · ${item.time}`}
                       </p>
                       <p className="text-[0.95rem] break-words">
                         {item.speaker}

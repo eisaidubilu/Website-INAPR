@@ -33,8 +33,10 @@ const ORGANIZATION = {
 export const DRAFT_NOINDEX: boolean = true
 
 const OG_IMAGE = { path: 'og.png', width: '1200', height: '630' }
-/** Font judul di atas lipatan (h1: 300, aksen/logo: 800). */
-const PRELOAD_FONT = /montserrat-latin-(300|800)-normal-[\w-]+\.woff2$/
+/** Font di atas lipatan: judul (Montserrat 300 untuk h1, 800 untuk aksen/logo) dan isi (Hind Siliguri 400). */
+const PRELOAD_FONT = /(montserrat-latin-(300|800)|hind-siliguri-latin-400)-normal-[\w-]+\.woff2$/
+/** Sumber chunk engine titik 3D (dimuat dinamis setelah load + idle oleh <PointField />). */
+const ENGINE_SOURCE = /\/src\/pointfield\/engine\.ts$/
 
 /**
  * URL situs dari VITE_SITE_URL, dinormalisasi ke "https://host/path/".
@@ -57,14 +59,16 @@ export function parseSiteUrl(raw: string | undefined): URL | null {
 
 /**
  * Meta SEO yang bergantung pada build/env:
- * - og:image + twitter:image (absolut bila VITE_SITE_URL ada), kanonik + og:url (hanya bila ada)
+ * - og:image + twitter:image (absolut bila VITE_SITE_URL ada), kanonik + og:url (hanya bila ada);
+ *   base build (subfolder) digabungkan bila VITE_SITE_URL tidak memuat path
  * - JSON-LD Organization
- * - preload font judul (hanya build, nama file ber-hash)
+ * - preload font judul + isi, dan prefetch chunk engine (hanya build, nama file ber-hash)
  * - robots.txt selalu; sitemap.xml hanya bila VITE_SITE_URL ada dan bukan draf
  * - meta robots noindex selama DRAFT_NOINDEX
  */
 export function seo(siteUrl: string | undefined): Plugin {
-  const site = parseSiteUrl(siteUrl)
+  const configured = parseSiteUrl(siteUrl)
+  let site = configured
   let base = '/'
   const absolute = (path: string) => (site ? new URL(path, site).href : `${base}${path}`)
   let ssr = false
@@ -73,6 +77,13 @@ export function seo(siteUrl: string | undefined): Plugin {
     name: 'inapr-seo',
     configResolved(config) {
       base = config.base
+      // Dihosting di subfolder (--base=/landing/ atau VITE_BASE) tetapi VITE_SITE_URL hanya domain
+      // (tanpa path): gabungkan base, supaya kanonik/og:url/og:image/sitemap menunjuk ke alamat sebenarnya
+      // (https://inapr.org → https://inapr.org/landing/). VITE_SITE_URL yang sudah memuat path dipakai apa adanya.
+      site =
+        configured && configured.pathname === '/' && base.startsWith('/') && base !== '/'
+          ? new URL(base, configured)
+          : configured
       ssr = Boolean(config.build.ssr)
     },
     transformIndexHtml: {
@@ -98,7 +109,17 @@ export function seo(siteUrl: string | undefined): Plugin {
           children: JSON.stringify(site ? { ...ORGANIZATION, url: site.href } : ORGANIZATION),
           injectTo: 'head',
         })
-        for (const file of Object.keys(ctx.bundle ?? {})) {
+        for (const [file, output] of Object.entries(ctx.bundle ?? {})) {
+          // Chunk engine (three.js, ±124 kB brotli) tidak dibutuhkan untuk render pertama, tetapi
+          // pasti diminta setelah load + idle. Prefetch = prioritas terendah, mengisi cache lebih awal
+          // dan memutus rantai HTML → JS utama → engine. crossorigin = mode yang sama dengan import().
+          if (output.type === 'chunk' && output.isDynamicEntry && ENGINE_SOURCE.test(output.facadeModuleId ?? '')) {
+            tags.push({
+              tag: 'link',
+              attrs: { rel: 'prefetch', as: 'script', href: `${base}${file}`, crossorigin: '' },
+              injectTo: 'head',
+            })
+          }
           if (PRELOAD_FONT.test(file)) {
             tags.push({
               tag: 'link',

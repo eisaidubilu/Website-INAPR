@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FocusEvent } from 'react'
-import { useActiveSection } from '@/hooks/useActiveSection'
+import { useActiveSection, useScrollProgress, useScrolled } from '@/hooks/useScrollState'
 import { useHeaderMetrics } from '@/hooks/useHeaderMetrics'
 import { useI18n } from '@/i18n/useI18n'
-import { NAV_IDS, SECTION_IDS } from '@/lib/sections'
+import { NAV_IDS } from '@/lib/sections'
 import { buttonPrimary, buttonSmall, cx } from '@/lib/ui'
 import { Banner } from './Banner'
 import { Container } from './Container'
@@ -11,8 +11,6 @@ import { ThemeToggle } from './ThemeToggle'
 
 const PANEL_ID = 'site-menu'
 const DESKTOP_QUERY = '(min-width: 768px)'
-/** Jarak gulir (px) sebelum bayangan navbar muncul. */
-const SCROLL_SHADOW_AFTER = 8
 
 /**
  * Header sticky: banner draf (ikut tergulung) + bar navigasi.
@@ -26,7 +24,7 @@ export function Navbar() {
   const headerRef = useRef<HTMLElement>(null)
   const bannerRef = useRef<HTMLParagraphElement>(null)
   const burgerRef = useRef<HTMLButtonElement>(null)
-  const active = useActiveSection(SECTION_IDS)
+  const active = useActiveSection()
 
   useHeaderMetrics(headerRef, bannerRef)
 
@@ -36,42 +34,12 @@ export function Navbar() {
   }, [])
 
   // Bayangan di bawah navbar muncul setelah halaman digulir sedikit.
-  const [scrolled, setScrolled] = useState(false)
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > SCROLL_SHADOW_AFTER)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  const scrolled = useScrolled()
 
   // Bilah progres scroll (2px, accent) di tepi bawah navbar: scaleX = posisi gulir halaman.
-  // Diperbarui sekali per frame dari listener pasif; hanya transform, tanpa render ulang React.
+  // Ditulis langsung ke elemen (hanya transform, tanpa render ulang React) dari penyimpan scroll bersama.
   const progressRef = useRef<HTMLSpanElement>(null)
-  useEffect(() => {
-    let frame = 0
-    const update = () => {
-      frame = 0
-      const bar = progressRef.current
-      if (!bar) return
-      const max = document.documentElement.scrollHeight - window.innerHeight
-      const progress = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0
-      bar.style.transform = `scaleX(${progress.toFixed(4)})`
-    }
-    const schedule = () => {
-      if (!frame) frame = window.requestAnimationFrame(update)
-    }
-    update()
-    window.addEventListener('scroll', schedule, { passive: true })
-    window.addEventListener('resize', schedule, { passive: true })
-    const observer = new ResizeObserver(schedule)
-    observer.observe(document.body)
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', schedule)
-      window.removeEventListener('resize', schedule)
-      observer.disconnect()
-    }
-  }, [])
+  useScrollProgress(progressRef)
 
   // Indikator menu aktif (≥ 768px): satu garis yang bergeser (transform) ke item aktif.
   const listRef = useRef<HTMLUListElement>(null)

@@ -5,6 +5,7 @@ import { Footer } from '@/components/Footer'
 import { Navbar } from '@/components/Navbar'
 import { PointField } from '@/components/PointField'
 import { SectionRail } from '@/components/SectionRail'
+import { useAnchorRealign } from '@/hooks/useAnchorRealign'
 import { usePointerFx } from '@/hooks/usePointerFx'
 import { useReveal } from '@/hooks/useReveal'
 import { useI18n } from '@/i18n/useI18n'
@@ -13,6 +14,7 @@ import { SECTIONS } from '@/sections'
 export default function App() {
   const { t } = useI18n()
   useReveal()
+  useAnchorRealign()
   usePointerFx()
 
   return (

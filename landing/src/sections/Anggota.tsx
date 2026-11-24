@@ -3,7 +3,7 @@ import { LoadNotice } from '@/components/LoadNotice'
 import { Pagination } from '@/components/Pagination'
 import { SearchField } from '@/components/SearchField'
 import { Section, SectionHead } from '@/components/Section'
-import { loadMembers } from '@/data'
+import { getMembers } from '@/data/api'
 import { useLazyData } from '@/hooks/useLazyData'
 import { useI18n } from '@/i18n/useI18n'
 import { fold, matchesAll, queryTerms } from '@/lib/search'
@@ -24,10 +24,11 @@ interface Entry {
 export function Anggota() {
   const { t } = useI18n()
   const c = t.anggota
-  const state = useLazyData(loadMembers)
+  const listRef = useRef<HTMLDivElement>(null)
+  // Data dimuat saat daftar mendekati layar, bukan saat halaman dibuka.
+  const state = useLazyData(getMembers, listRef)
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(0)
-  const listRef = useRef<HTMLDivElement>(null)
 
   const entries = useMemo<Entry[]>(
     () =>
