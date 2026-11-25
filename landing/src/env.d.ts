@@ -7,6 +7,8 @@ declare global {
     readonly VITE_SLIDES_BASE_URL?: string
     /** Mode (a): alamat backend INAPR ("https://api…" atau "/" untuk same-origin/proxy). Lihat docs/KONTRAK-DATA.md. */
     readonly VITE_API_BASE?: string
+    /** Hanya dev server: target proxy /api. Terisi = mode same-origin aktif di dev. Lihat docs/KONTRAK-DATA.md. */
+    readonly VITE_API_PROXY?: string
     /** Mode (b): URL proyek Supabase. Hanya dipakai bersama VITE_SUPABASE_ANON_KEY. */
     readonly VITE_SUPABASE_URL?: string
     /** Mode (b): anon key (publik; keamanan ada di RLS). JANGAN pernah isi service-role key. */

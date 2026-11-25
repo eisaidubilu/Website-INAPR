@@ -2,7 +2,10 @@
  * Sumber data anggota & arsip webinar. Kontrak lengkap: docs/KONTRAK-DATA.md.
  *
  * Urutan pemilihan sumber (dibaca saat build, lihat .env.example):
- *   a. VITE_API_BASE                                   → GET {base}/api/public/members | archives  ({ items: [...] })
+ *   a. VITE_API_BASE terisi                            → GET {base}/api/public/members | archives  ({ items: [...] })
+ *   a'. same-origin: VITE_API_BASE kosong DAN build produksi (di dev: hanya bila VITE_API_PROXY terisi)
+ *                                                      → GET /api/public/members | archives (path ABSOLUT, tidak
+ *                                                        relatif terhadap base "/landing/" saat di-embed ke app Next)
  *   b. VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY      → REST Supabase langsung (hanya SELECT, anon key)
  *   c. selain itu                                      → data lokal (src/data/*.json)
  *
@@ -58,6 +61,9 @@ function resolveSource(): Source | null {
     const base = parseApiBase(apiBase)
     return base === null ? null : { kind: 'api', base }
   }
+  // Same-origin: basis "" → URL "/api/public/…" (absolut; bukan di bawah base "/landing/").
+  // Produksi: aktif otomatis. Dev: hanya bila VITE_API_PROXY terisi (vite.config.ts mem-proxy /api ke sana).
+  if (env.PROD || env.VITE_API_PROXY?.trim()) return { kind: 'api', base: '' }
   const supabaseUrl = env.VITE_SUPABASE_URL?.trim()
   const anonKey = env.VITE_SUPABASE_ANON_KEY?.trim()
   if (supabaseUrl && anonKey) {

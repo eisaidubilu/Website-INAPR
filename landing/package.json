@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
+    "build:embed": "tsc -b && vite build --base=/landing/ && vite build --ssr src/entry-server.tsx --outDir dist-ssr --base=/landing/ && node scripts/prerender.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "data": "node scripts/build-data.mjs",
